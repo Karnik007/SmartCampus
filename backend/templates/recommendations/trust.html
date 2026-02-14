@@ -1,0 +1,94 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trust Indicator – SmartCampus AI</title>
+    <meta name="description" content="See how transparent and fair our AI recommendations are." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+</head>
+
+<body>
+
+    <!-- ========== TRUST INDICATOR ========== -->
+    <section class="trust page-section" id="trust">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge">Transparency Score</span>
+                <h2 class="section-title">Trust Indicator</h2>
+                <p class="section-subtitle">A measure of how transparent and fair our recommendations are.</p>
+            </div>
+            <div class="trust-card">
+                <div class="trust-meter">
+                    <svg class="trust-ring" viewBox="0 0 200 200">
+                        <circle class="trust-ring-bg" cx="100" cy="100" r="85" />
+                        <circle class="trust-ring-fill" cx="100" cy="100" r="85" id="trustRingFill" />
+                    </svg>
+                    <div class="trust-value" id="trustValue">92%</div>
+                </div>
+                <div class="trust-details">
+                    <h3>Why you can trust these recommendations</h3>
+                    <div class="trust-bar-group">
+                        <div class="trust-bar-item">
+                            <span>Budget Compliance</span>
+                            <div class="trust-bar">
+                                <div class="trust-bar-fill" style="--bar-width: 100%;">100%</div>
+                            </div>
+                        </div>
+                        <div class="trust-bar-item">
+                            <span>Preference Match</span>
+                            <div class="trust-bar">
+                                <div class="trust-bar-fill" style="--bar-width: 90%;">90%</div>
+                            </div>
+                        </div>
+                        <div class="trust-bar-item">
+                            <span>Explanation Clarity</span>
+                            <div class="trust-bar">
+                                <div class="trust-bar-fill" style="--bar-width: 95%;">95%</div>
+                            </div>
+                        </div>
+                        <div class="trust-bar-item">
+                            <span>Diversity Score</span>
+                            <div class="trust-bar">
+                                <div class="trust-bar-fill" style="--bar-width: 82%;">82%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <p>Built with ❤️ for Hackathon 2026 · <strong>SmartCampus AI</strong> — Transparent Recommender System</p>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/api.js' %}"></script>
+    <script src="{% static 'js/auth.js' %}"></script>
+    <script src="{% static 'js/shared.js' %}"></script>
+    <script>
+        {% if user.is_authenticated %}
+        if (!localStorage.getItem('smartcampus-user')) {
+            localStorage.setItem('smartcampus-user', JSON.stringify({
+                name: "{{ user.first_name|default:user.email|escapejs }}",
+                email: "{{ user.email|escapejs }}",
+                id: {{ user.id }},
+        provider: "email"
+            }));
+        }
+        {% else %}
+        localStorage.removeItem('smartcampus-user');
+        {% endif %}
+    </script>
+    <script src="{% static 'js/trust.js' %}"></script>
+</body>
+
+</html>

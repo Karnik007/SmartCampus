@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Recommendations – SmartCampus AI</title>
+    <meta name="description" content="Your personalized campus recommendations with transparent explanations." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+    <!-- ========== RECOMMENDATION RESULTS ========== -->
+    <section class="results visible page-section" id="results">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge">Your Picks</span>
+                <h2 class="section-title">Recommendations</h2>
+                <p class="section-subtitle">Tailored for your budget, taste, and interests.</p>
+            </div>
+            <div class="results-grid" id="resultsGrid">
+                <!-- Cards rendered by JS -->
+            </div>
+
+            <!-- ========== EXPLORE SOMETHING NEW ========== -->
+            <div class="explore-section" id="exploreSection">
+                <div class="section-header">
+                    <span class="section-badge explore-badge">🌟 Break the Bubble</span>
+                    <h2 class="section-title">Explore Something New</h2>
+                </div>
+                <div id="exploreCard">
+                    <!-- Rendered by JS -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== COMPARISON MODAL ========== -->
+    <div class="modal-overlay" id="compareModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Compare Items</h2>
+                <button class="modal-close" id="modalClose" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body" id="compareBody">
+                <!-- Rendered by JS -->
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>Built with ❤️ for Hackathon 2026 · <strong>SmartCampus AI</strong> — Transparent Recommender System</p>
+        </div>
+    </footer>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/shared.js"></script>
+    <script src="js/results.js"></script>
+</body>
+
+</html>

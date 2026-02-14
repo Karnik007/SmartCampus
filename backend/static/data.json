@@ -1,0 +1,157 @@
+{
+  "recommendations": [
+    {
+      "id": 1,
+      "name": "South Indian Thali",
+      "type": "food",
+      "price": 120,
+      "rating": 4.5,
+      "distance": 3,
+      "tags": ["Vegetarian", "South Indian", "Healthy"],
+      "dietary": "veg",
+      "image": "🍛",
+      "canteen": "Main Campus Canteen",
+      "reasons": [
+        "Fits within your ₹{budget} budget",
+        "Matches your vegetarian dietary preference",
+        "High rating (4.5 stars)",
+        "Close to your location (3 min walk)",
+        "Popular among students with similar preferences"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Veggie Wrap Combo",
+      "type": "food",
+      "price": 90,
+      "rating": 4.2,
+      "distance": 5,
+      "tags": ["Vegan", "Quick Bite", "Healthy"],
+      "dietary": "vegan",
+      "image": "🌯",
+      "canteen": "Engineering Block Café",
+      "reasons": [
+        "Fits within your ₹{budget} budget",
+        "Matches your vegan dietary preference",
+        "High rating (4.2 stars)",
+        "Quick meal option for busy schedules",
+        "Highly rated by health-conscious students"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Chicken Biryani",
+      "type": "food",
+      "price": 180,
+      "rating": 4.7,
+      "distance": 8,
+      "tags": ["Non-Veg", "Biryani", "Popular"],
+      "dietary": "non-veg",
+      "image": "🍗",
+      "canteen": "Food Court",
+      "reasons": [
+        "Fits within your ₹{budget} budget",
+        "Matches your non-veg dietary preference",
+        "Highest rated item (4.7 stars)",
+        "Most popular lunch choice on campus",
+        "Great value for the portion size"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Tech Innovation Summit",
+      "type": "event",
+      "price": 50,
+      "rating": 4.8,
+      "distance": 10,
+      "tags": ["Tech", "Networking", "Workshop"],
+      "dietary": "all",
+      "image": "💻",
+      "canteen": "Auditorium Hall A",
+      "reasons": [
+        "Entry fee within your ₹{budget} budget",
+        "Matches your interest in Tech Events",
+        "Highest rated campus event (4.8 stars)",
+        "Includes hands-on workshop session",
+        "Great networking opportunity"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Acoustic Night",
+      "type": "event",
+      "price": 30,
+      "rating": 4.3,
+      "distance": 6,
+      "tags": ["Music", "Cultural", "Evening"],
+      "dietary": "all",
+      "image": "🎵",
+      "canteen": "Open Air Theatre",
+      "reasons": [
+        "Entry fee within your ₹{budget} budget",
+        "Matches your interest in Music & Cultural events",
+        "Highly rated by attendees (4.3 stars)",
+        "Close to your location (6 min walk)",
+        "Relaxing evening activity"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Paneer Tikka Plate",
+      "type": "food",
+      "price": 150,
+      "rating": 4.4,
+      "distance": 4,
+      "tags": ["Vegetarian", "North Indian", "Spicy"],
+      "dietary": "veg",
+      "image": "🧀",
+      "canteen": "North Block Canteen",
+      "reasons": [
+        "Fits within your ₹{budget} budget",
+        "Matches your vegetarian dietary preference",
+        "High rating (4.4 stars)",
+        "Very close to your location (4 min walk)",
+        "Chef's special today"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "Inter-College Sports Meet",
+      "type": "event",
+      "price": 0,
+      "rating": 4.6,
+      "distance": 15,
+      "tags": ["Sports", "Competition", "Free"],
+      "dietary": "all",
+      "image": "⚽",
+      "canteen": "Sports Complex",
+      "reasons": [
+        "Free entry — fits any budget",
+        "Matches your interest in Sports events",
+        "Highly rated event (4.6 stars)",
+        "Annual flagship event",
+        "Participate or watch — your choice"
+      ]
+    }
+  ],
+  "explore": {
+    "id": 99,
+    "name": "Sushi Platter (New!)",
+    "type": "food",
+    "price": 250,
+    "rating": 4.9,
+    "distance": 12,
+    "tags": ["Japanese", "New Arrival", "Premium"],
+    "dietary": "non-veg",
+    "image": "🍣",
+    "canteen": "International Food Court",
+    "reasons": [
+      "You usually choose Indian cuisine — try something different!",
+      "Highest rated new addition (4.9 stars)",
+      "Within your budget",
+      "Limited-time campus special",
+      "Students who tried it loved it"
+    ],
+    "exploreMessage": "You usually choose similar items. Try this highly rated alternative within your budget."
+  }
+}

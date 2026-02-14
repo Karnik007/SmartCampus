@@ -1,0 +1,110 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SmartCampus AI – Complete your order and pay securely via Razorpay.">
+    <title>Payment – SmartCampus AI</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <!-- Navbar injected by shared.js -->
+
+    <section class="page-section" style="min-height:80vh;">
+        <div class="section-container">
+            <div class="section-header">
+                <h1 class="section-title">Complete Your Order</h1>
+                <p class="section-subtitle">Review your items and pay securely with Razorpay</p>
+            </div>
+
+            <!-- Order Summary Card -->
+            <div class="payment-wrapper">
+                <div class="payment-card glass">
+                    <div class="payment-card-header">
+                        <h2>🧾 Order Summary</h2>
+                    </div>
+
+                    <div id="orderItems" class="order-items">
+                        <!-- Items injected by JS -->
+                    </div>
+
+                    <div class="order-divider"></div>
+
+                    <div class="order-total-row">
+                        <span class="order-total-label">Total Amount</span>
+                        <span class="order-total-value" id="orderTotal">₹0</span>
+                    </div>
+
+                    <button class="btn btn-primary btn-lg btn-pay" id="payBtn" disabled>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                            <line x1="1" y1="10" x2="23" y2="10"></line>
+                        </svg>
+                        Pay with Razorpay
+                    </button>
+
+                    <p class="payment-secure-note">
+                        🔒 Secured by Razorpay. Your payment info is never stored on our servers.
+                    </p>
+                </div>
+
+                <!-- Payment Status -->
+                <div id="paymentStatus" class="payment-status" style="display:none;">
+                    <div class="payment-status-icon" id="paymentStatusIcon"></div>
+                    <h2 id="paymentStatusTitle"></h2>
+                    <p id="paymentStatusMessage"></p>
+                    <div id="paymentReceipt" class="payment-receipt" style="display:none;"></div>
+                    <div class="payment-actions">
+                        <a href="{% url 'results' %}" class="btn btn-primary">← Back to Recommendations</a>
+                        <a href="{% url 'dashboard' %}" class="btn btn-secondary">New Search</a>
+                    </div>
+                </div>
+
+                <!-- Order History -->
+                <div class="payment-card glass" style="margin-top:2rem;">
+                    <div class="payment-card-header">
+                        <h2>📋 Recent Orders</h2>
+                    </div>
+                    <div id="orderHistory" class="order-history">
+                        <p class="empty-state">Loading order history...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2026 SmartCampus AI – Transparent Recommendations for Campus Life</p>
+        </div>
+    </footer>
+
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="{% static 'js/api.js' %}"></script>
+    <script src="{% static 'js/auth.js' %}"></script>
+    <script src="{% static 'js/shared.js' %}"></script>
+    <script>
+        {% if user.is_authenticated %}
+        if (!localStorage.getItem('smartcampus-user')) {
+            localStorage.setItem('smartcampus-user', JSON.stringify({
+                name: "{{ user.first_name|default:user.email|escapejs }}",
+                email: "{{ user.email|escapejs }}",
+                id: {{ user.id }},
+        provider: "email"
+            }));
+        }
+        {% else %}
+        localStorage.removeItem('smartcampus-user');
+        {% endif %}
+    </script>
+    <script src="{% static 'js/payment.js' %}"></script>
+</body>
+
+</html>

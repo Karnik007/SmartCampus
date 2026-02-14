@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard – SmartCampus AI</title>
+    <meta name="description" content="Set your preferences to get personalized campus recommendations." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+    <!-- ========== USER INPUT DASHBOARD ========== -->
+    <section class="dashboard page-section" id="dashboard">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge">Personalize</span>
+                <h2 class="section-title">Your Preferences</h2>
+                <p class="section-subtitle">Tell us what matters to you and we'll find the best matches.</p>
+            </div>
+            <form class="dashboard-form" id="preferencesForm">
+                <div class="form-grid">
+
+                    <!-- Budget Slider -->
+                    <div class="form-group form-group-full">
+                        <label for="budgetSlider">
+                            <span class="form-label-text">Budget</span>
+                            <span class="form-label-value" id="budgetValue">₹250</span>
+                        </label>
+                        <input type="range" id="budgetSlider" min="0" max="500" value="250" step="10"
+                            class="range-slider" />
+                        <div class="range-labels">
+                            <span>₹0</span><span>₹500</span>
+                        </div>
+                    </div>
+
+                    <!-- Dietary Preference -->
+                    <div class="form-group">
+                        <label for="dietaryPref" class="form-label-text">Dietary Preference</label>
+                        <div class="select-wrapper">
+                            <select id="dietaryPref">
+                                <option value="all">All</option>
+                                <option value="veg">Vegetarian</option>
+                                <option value="vegan">Vegan</option>
+                                <option value="non-veg">Non-Veg</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Location -->
+                    <div class="form-group">
+                        <label for="locationPref" class="form-label-text">Location</label>
+                        <div class="select-wrapper">
+                            <select id="locationPref">
+                                <option value="any">Any Location</option>
+                                <option value="main">Main Campus</option>
+                                <option value="engineering">Engineering Block</option>
+                                <option value="north">North Block</option>
+                                <option value="sports">Sports Complex</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Available Time -->
+                    <div class="form-group">
+                        <label for="availableTime" class="form-label-text">Available Time (minutes)</label>
+                        <input type="number" id="availableTime" min="5" max="180" value="30" placeholder="e.g. 30"
+                            class="text-input" />
+                    </div>
+
+                    <!-- Interest Selection -->
+                    <div class="form-group form-group-full">
+                        <span class="form-label-text">Interests</span>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" value="tech" checked /> <span class="checkbox-custom"></span>
+                                Tech Events
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" value="music" /> <span class="checkbox-custom"></span> Music
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" value="sports" /> <span class="checkbox-custom"></span> Sports
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" value="cultural" /> <span class="checkbox-custom"></span>
+                                Cultural
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Weight Sliders -->
+                    <div class="form-group">
+                        <label for="weightPrice">
+                            <span class="form-label-text">Price Importance</span>
+                            <span class="form-label-value" id="weightPriceVal">50%</span>
+                        </label>
+                        <input type="range" id="weightPrice" min="0" max="100" value="50"
+                            class="range-slider range-accent" />
+                    </div>
+                    <div class="form-group">
+                        <label for="weightRating">
+                            <span class="form-label-text">Rating Importance</span>
+                            <span class="form-label-value" id="weightRatingVal">70%</span>
+                        </label>
+                        <input type="range" id="weightRating" min="0" max="100" value="70"
+                            class="range-slider range-accent" />
+                    </div>
+                    <div class="form-group">
+                        <label for="weightDistance">
+                            <span class="form-label-text">Distance Importance</span>
+                            <span class="form-label-value" id="weightDistanceVal">40%</span>
+                        </label>
+                        <input type="range" id="weightDistance" min="0" max="100" value="40"
+                            class="range-slider range-accent" />
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-submit" id="submitBtn">
+                    <span>Get My Recommendations</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14" />
+                        <path d="m12 5 7 7-7 7" />
+                    </svg>
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <p>Built with ❤️ for Hackathon 2026 · <strong>SmartCampus AI</strong> — Transparent Recommender System</p>
+        </div>
+    </footer>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/shared.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+
+</html>

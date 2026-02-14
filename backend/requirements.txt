@@ -1,0 +1,10 @@
+Django
+djangorestframework
+djangorestframework-simplejwt
+django-cors-headers
+django-filter
+django-allauth
+mysqlclient
+razorpay
+python-dotenv
+Pillow

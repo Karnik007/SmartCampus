@@ -1,0 +1,142 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SmartCampus AI – Transparent Recommender System</title>
+    <meta name="description"
+        content="An AI-based transparent recommender system for campus canteens and events. Budget-aware, preference-matched, and filter-bubble free." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+</head>
+
+<body>
+
+    <!-- ========== HERO SECTION ========== -->
+    <section class="hero" id="hero">
+        <div class="hero-bg-shapes">
+            <div class="shape shape-1"></div>
+            <div class="shape shape-2"></div>
+            <div class="shape shape-3"></div>
+        </div>
+        <div class="hero-content">
+            <div class="hero-badge">🚀 AI-Powered Campus Recommendations</div>
+            <h1 class="hero-title">
+                SmartCampus <span class="gradient-text">AI</span>
+            </h1>
+            <p class="hero-tagline">AI That Explains Every Recommendation</p>
+            <p class="hero-subtitle">
+                A transparent recommender system for campus canteens &amp; events that respects your budget, matches
+                your preferences, and shows you <em>why</em> each recommendation was made.
+            </p>
+            <div class="hero-cta">
+                <a href="{% url 'dashboard' %}" class="btn btn-primary" id="ctaButton">
+                    <span>Get Recommendations</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14" />
+                        <path d="m12 5 7 7-7 7" />
+                    </svg>
+                </a>
+                <a href="#features" class="btn btn-secondary">Learn More</a>
+            </div>
+            <!-- Demo Preview Cards -->
+            <div class="hero-preview">
+                <div class="preview-card preview-card-1">
+                    <span class="preview-emoji">🍛</span>
+                    <div>
+                        <span class="preview-label">South Indian Thali</span>
+                        <span class="preview-tag">₹120 · ⭐ 4.5</span>
+                    </div>
+                </div>
+                <div class="preview-card preview-card-2">
+                    <span class="preview-emoji">💻</span>
+                    <div>
+                        <span class="preview-label">Tech Summit</span>
+                        <span class="preview-tag">₹50 · ⭐ 4.8</span>
+                    </div>
+                </div>
+                <div class="preview-card preview-card-3">
+                    <span class="preview-emoji">🎵</span>
+                    <div>
+                        <span class="preview-label">Acoustic Night</span>
+                        <span class="preview-tag">₹30 · ⭐ 4.3</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== FEATURES SECTION ========== -->
+    <section class="features" id="features">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge">Why SmartCampus AI?</span>
+                <h2 class="section-title">Intelligent. Transparent. Fair.</h2>
+                <p class="section-subtitle">Our AI doesn't just recommend — it explains, respects your budget, and
+                    breaks filter bubbles.</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">💰</div>
+                    <h3>Budget-Aware AI</h3>
+                    <p>Every recommendation fits within your specified budget. No surprises, no hidden costs — just
+                        options you can actually afford.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔍</div>
+                    <h3>Transparent Explanations</h3>
+                    <p>Each recommendation comes with a clear "Why This?" section explaining exactly why it was picked
+                        for you.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🌐</div>
+                    <h3>Anti-Filter Bubble</h3>
+                    <p>We actively suggest diverse options you wouldn't normally see, helping you discover new food and
+                        events on campus.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== FOOTER ========== -->
+    <footer class="footer">
+        <div class="container">
+            <p>Built with ❤️ for Hackathon 2026 · <strong>SmartCampus AI</strong> — Transparent Recommender System</p>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/api.js' %}"></script>
+    <script src="{% static 'js/auth.js' %}"></script>
+    <script src="{% static 'js/shared.js' %}"></script>
+    <script>
+        // Sync Django session auth state with client-side localStorage
+        {% if user.is_authenticated %}
+        (function () {
+            var stored = localStorage.getItem('smartcampus-user');
+            if (!stored) {
+                localStorage.setItem('smartcampus-user', JSON.stringify({
+                    name: "{{ user.first_name|default:user.email|escapejs }}",
+                    email: "{{ user.email|escapejs }}",
+                    id: {{ user.id }},
+            provider: "email"
+        }));
+            }
+        }) ();
+        {% else %}
+        localStorage.removeItem('smartcampus-user');
+        {% endif %}
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            initShared();
+        });
+    </script>
+</body>
+
+</html>
