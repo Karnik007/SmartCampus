@@ -123,3 +123,62 @@ def results_view(request):
 def trust_view(request):
     """GET /trust/ – Trust indicator page."""
     return render(request, 'recommendations/trust.html')
+
+
+# ============================================
+# Location-based nearby recommendations
+# ============================================
+import json
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+from recommendations.services.recommendation_service import get_nearby_recommendations
+
+
+@login_required
+def nearby_view(request):
+    """GET /nearby/ – Redirect to merged results page."""
+    from django.shortcuts import redirect
+    return redirect('results')
+
+
+@csrf_exempt
+@require_POST
+def nearby_recommendations_api(request):
+    """
+    POST /get-recommendations/
+    Body: { "latitude": float, "longitude": float, "preferences": [...] }
+    Returns JSON list of scored nearby recommendations.
+    """
+    try:
+        body = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({"error": "Invalid JSON body."}, status=400)
+
+    lat = body.get("latitude")
+    lon = body.get("longitude")
+
+    # Validate coordinates
+    if lat is None or lon is None:
+        return JsonResponse({"error": "latitude and longitude are required."}, status=400)
+
+    try:
+        lat = float(lat)
+        lon = float(lon)
+    except (TypeError, ValueError):
+        return JsonResponse({"error": "latitude and longitude must be numbers."}, status=400)
+
+    if not (-90 <= lat <= 90) or not (-180 <= lon <= 180):
+        return JsonResponse({"error": "Invalid coordinate range."}, status=400)
+
+    preferences = body.get("preferences", [])
+    if not isinstance(preferences, list):
+        preferences = []
+
+    try:
+        results = get_nearby_recommendations(lat, lon, preferences or None)
+    except Exception as exc:
+        logger.error("Recommendation engine error: %s", exc)
+        return JsonResponse({"error": "Failed to fetch recommendations. Please try again."}, status=500)
+
+    return JsonResponse(results, safe=False)

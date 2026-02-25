@@ -1,0 +1,52 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block head_title %}SmartCampus AI{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+</head>
+
+<body class="auth-page">
+    <div class="auth-bg-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+    </div>
+
+    <div class="auth-wrapper" style="max-width: 500px;">
+        <a href="{% url 'home' %}" class="auth-logo">
+            <span class="logo-icon">🎓</span>
+            <span class="logo-text">SmartCampus<span class="logo-accent">AI</span></span>
+        </a>
+
+        <div class="auth-card">
+            {% if messages %}
+            <div class="auth-messages" style="margin-bottom: 20px;">
+                {% for message in messages %}
+                <div class="auth-error show"
+                    style="display: block; background: rgba(99, 102, 241, 0.1); border-color: rgba(99, 102, 241, 0.3); color: var(--accent-3);">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="allauth-content">
+                {% block content %}
+                {% endblock %}
+            </div>
+        </div>
+    </div>
+
+    <!-- minimal JS for theme -->
+    <script>
+        const saved = localStorage.getItem('smartcampus-theme');
+        if (saved) document.documentElement.setAttribute('data-theme', saved);
+    </script>
+</body>
+
+</html>

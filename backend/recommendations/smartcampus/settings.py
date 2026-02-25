@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     # Local apps
     'recommendations',
     'payments',
+    'analytics',
     'smartcampus',
     
     
@@ -239,23 +240,6 @@ CORS_ALLOW_CREDENTIALS = True
 # ============================================
 RAZORPAY_KEY_ID = os.getenv('RAZORPAY_KEY_ID', '')
 RAZORPAY_KEY_SECRET = os.getenv('RAZORPAY_KEY_SECRET', '')
-
-# ============================================
-# External API Keys (Recommendation Engine)
-# ============================================
-FOURSQUARE_API_KEY = os.getenv('FOURSQUARE_API_KEY', '')
-EVENTBRITE_TOKEN = os.getenv('EVENTBRITE_TOKEN', '')
-
-# ============================================
-# Caching
-# ============================================
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'smartcampus-cache',
-        'TIMEOUT': 300,
-    }
-}
 
 # ============================================
 # Logging (Production-ready)

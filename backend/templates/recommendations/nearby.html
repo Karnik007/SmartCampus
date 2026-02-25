@@ -5,27 +5,27 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Recommendations – SmartCampus AI</title>
+    <title>Nearby Recommendations – SmartCampus AI</title>
     <meta name="description" content="Discover restaurants, cafes, parks, events and more near you." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
         rel="stylesheet" />
-    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=6" />
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=5" />
 </head>
 
 <body>
 
-    <!-- ========== RECOMMENDATION RESULTS ========== -->
-    <section class="results visible page-section" id="results">
+    <!-- ========== NEARBY RECOMMENDATIONS ========== -->
+    <section class="nearby-page page-section" id="nearbyPage">
         <div class="container">
 
             <!-- Header -->
             <div class="section-header">
                 <span class="section-badge">Explore</span>
-                <h2 class="section-title">What's <span class="gradient-text">Near You</span></h2>
-                <p class="section-subtitle">Real-time recommendations powered by OpenStreetMap, Foursquare &
-                    Eventbrite.</p>
+                <h1 class="section-title">What's <span class="gradient-text">Near You</span></h1>
+                <p class="section-subtitle">Discover top-rated restaurants, cafes, parks, events and more — powered by
+                    real-time location intelligence.</p>
             </div>
 
             <!-- Location bar -->
@@ -84,17 +84,17 @@
             <!-- Empty state -->
             <div class="nearby-empty" id="nearbyEmpty" style="display:none;">
                 <div class="nearby-empty-icon">📍</div>
-                <p class="nearby-empty-text">No recommendations found for this category.</p>
-                <p class="nearby-empty-sub">Try "All" or a different category.</p>
+                <p class="nearby-empty-text">No recommendations found nearby.</p>
+                <p class="nearby-empty-sub">Try a different location or check back later.</p>
             </div>
+
+            <!-- Results grid -->
+            <div class="nearby-cards-grid" id="nearbyGrid"></div>
 
             <!-- Results count -->
             <div class="nearby-results-info" id="resultsInfo" style="display:none;">
                 <span id="resultsCount"></span>
             </div>
-
-            <!-- Results grid (nearby cards) -->
-            <div class="nearby-cards-grid" id="nearbyGrid"></div>
 
         </div>
     </section>
@@ -105,9 +105,14 @@
         </div>
     </footer>
 
-    <script src="{% static 'js/api.js' %}?v=6"></script>
-    <script src="{% static 'js/auth.js' %}?v=6"></script>
-    <script src="{% static 'js/shared.js' %}?v=6"></script>
+    <!-- Theme persistence -->
+    <script>
+        const saved = localStorage.getItem('smartcampus-theme');
+        if (saved) document.documentElement.setAttribute('data-theme', saved);
+    </script>
+    <script src="{% static 'js/api.js' %}?v=5"></script>
+    <script src="{% static 'js/auth.js' %}?v=5"></script>
+    <script src="{% static 'js/shared.js' %}?v=5"></script>
     <script>
         {% if user.is_authenticated %}
         if (!localStorage.getItem('smartcampus-user')) {
@@ -122,7 +127,8 @@
         localStorage.removeItem('smartcampus-user');
         {% endif %}
     </script>
-    <script src="{% static 'js/results.js' %}?v=6"></script>
+    <script>initShared();</script>
+    <script src="{% static 'js/nearby.js' %}?v=5"></script>
 </body>
 
 </html>
