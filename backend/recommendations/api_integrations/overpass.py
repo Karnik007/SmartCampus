@@ -21,23 +21,34 @@ def _build_query(lat: float, lon: float, radius: int = 2000) -> str:
     [out:json][timeout:{TIMEOUT}];
     (
       node["amenity"="restaurant"](around:{radius},{lat},{lon});
+      node["amenity"="fast_food"](around:{radius},{lat},{lon});
       node["amenity"="cafe"](around:{radius},{lat},{lon});
+      node["amenity"="bar"](around:{radius},{lat},{lon});
+      node["amenity"="pub"](around:{radius},{lat},{lon});
       node["amenity"="marketplace"](around:{radius},{lat},{lon});
       node["shop"](around:{radius},{lat},{lon});
-      node["leisure"](around:{radius},{lat},{lon});
+      node["leisure"="park"](around:{radius},{lat},{lon});
+      node["leisure"="garden"](around:{radius},{lat},{lon});
+      node["leisure"="sports_centre"](around:{radius},{lat},{lon});
+      node["leisure"="stadium"](around:{radius},{lat},{lon});
+      node["leisure"="playground"](around:{radius},{lat},{lon});
+      node["leisure"="pitch"](around:{radius},{lat},{lon});
       node["tourism"](around:{radius},{lat},{lon});
+      way["leisure"="park"](around:{radius},{lat},{lon});
+      way["leisure"="garden"](around:{radius},{lat},{lon});
     );
-    out body;
+    out center body;
     """
 
 
 def _categorize(tags: dict) -> str:
     """Derive a human-readable category from OSM tags."""
-    if tags.get("amenity") == "restaurant":
+    amenity = tags.get("amenity", "")
+    if amenity in ("restaurant", "fast_food"):
         return "restaurant"
-    if tags.get("amenity") == "cafe":
+    if amenity in ("cafe", "bar", "pub"):
         return "cafe"
-    if tags.get("amenity") == "marketplace":
+    if amenity == "marketplace":
         return "market"
     if "shop" in tags:
         shop = tags["shop"]
@@ -90,10 +101,16 @@ def fetch_nearby_places(lat: float, lon: float, radius: int = 2000) -> list[dict
         if not name:
             continue  # skip unnamed POIs
 
+        # Nodes have lat/lon directly; ways/relations use "center"
+        e_lat = element.get("lat") or (element.get("center", {}) or {}).get("lat")
+        e_lon = element.get("lon") or (element.get("center", {}) or {}).get("lon")
+        if e_lat is None or e_lon is None:
+            continue
+
         results.append({
             "name": name,
-            "lat": element.get("lat"),
-            "lon": element.get("lon"),
+            "lat": e_lat,
+            "lon": e_lon,
             "category": _categorize(tags),
             "rating": None,
             "open_now": None,
@@ -103,3 +120,4 @@ def fetch_nearby_places(lat: float, lon: float, radius: int = 2000) -> list[dict
 
     logger.info("Overpass returned %d named POIs near (%.4f, %.4f)", len(results), lat, lon)
     return results
+

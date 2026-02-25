@@ -1,5 +1,5 @@
 /* ===================================================
-   SmartCampus AI – Results Page (v3 – Live Location)
+   SmartCampus AI – Results Page (v4 – Live Location)
    Geolocation → /get-recommendations/ → render cards
    =================================================== */
 
@@ -49,22 +49,31 @@
     Eventbrite: { bg: 'rgba(249, 115, 22, 0.15)', color: '#fb923c', border: 'rgba(249, 115, 22, 0.3)' },
   };
 
-  // ── Category matching (flexible) ──────────────────────────────────
-  // Maps filter pill values to possible API category values they should match
+  // ── Category matching ─────────────────────────────────────────────
+  // Maps each filter pill value to all API category strings it should match.
   const CATEGORY_MAP = {
-    restaurant: ['restaurant', 'dining', 'food'],
-    cafe: ['cafe', 'coffee', 'tea', 'bar'],
-    market: ['market', 'shop', 'supermarket', 'grocery', 'marketplace'],
-    game_zone: ['game_zone', 'game', 'arcade', 'sport', 'sports', 'playground', 'leisure', 'entertainment'],
-    park: ['park', 'garden', 'nature', 'nature_reserve'],
-    event: ['event'],
+    restaurant: ['restaurant', 'dining', 'food', 'fast_food', 'food_court'],
+    cafe: ['cafe', 'coffee', 'tea', 'bar', 'pub', 'bakery'],
+    market: ['market', 'shop', 'supermarket', 'grocery', 'marketplace', 'convenience'],
+    game_zone: ['game_zone', 'game', 'arcade', 'sport', 'sports', 'playground', 'leisure', 'entertainment', 'cinema', 'bowling'],
+    park: ['park', 'garden', 'nature', 'nature_reserve', 'recreation'],
+    event: ['event', 'festival', 'concert', 'meetup', 'workshop', 'conference'],
   };
 
   function matchesCategory(itemCategory, filterCat) {
     if (filterCat === 'all') return true;
-    const cat = (itemCategory || '').toLowerCase();
-    const matches = CATEGORY_MAP[filterCat] || [filterCat];
-    return matches.some(m => cat === m || cat.includes(m) || m.includes(cat));
+    if (!itemCategory) return false;
+
+    const cat = itemCategory.toLowerCase().trim();
+    const validMatches = CATEGORY_MAP[filterCat];
+
+    if (!validMatches) return cat === filterCat;
+
+    // Check exact match first, then substring containment both ways
+    for (const m of validMatches) {
+      if (cat === m || cat.includes(m) || m.includes(cat)) return true;
+    }
+    return false;
   }
 
   // ── Geolocation ───────────────────────────────────────────────────
@@ -76,7 +85,7 @@
 
     locationLabel.textContent = 'Detecting location…';
     detectBtn.disabled = true;
-    detectBtn.innerHTML = `<div class="nearby-btn-spinner"></div><span>Detecting…</span>`;
+    detectBtn.innerHTML = '<div class="nearby-btn-spinner"></div><span>Detecting…</span>';
 
     navigator.geolocation.getCurrentPosition(onLocationSuccess, onLocationError, {
       enableHighAccuracy: true,
@@ -90,30 +99,22 @@
     userLon = pos.coords.longitude;
 
     locationLabel.textContent = 'Location detected ✓';
-    locationCoords.textContent = `${userLat.toFixed(4)}, ${userLon.toFixed(4)}`;
+    locationCoords.textContent = userLat.toFixed(4) + ', ' + userLon.toFixed(4);
     detectBtn.disabled = false;
-    detectBtn.innerHTML = `
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-        stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/>
-        <circle cx="12" cy="12" r="3"/>
-      </svg>
-      <span>Refresh Location</span>`;
+    detectBtn.innerHTML =
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><circle cx="12" cy="12" r="3"/></svg>' +
+      '<span>Refresh Location</span>';
 
     fetchRecommendations();
   }
 
   function onLocationError(err) {
     detectBtn.disabled = false;
-    detectBtn.innerHTML = `
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-        stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/>
-        <circle cx="12" cy="12" r="3"/>
-      </svg>
-      <span>Detect My Location</span>`;
+    detectBtn.innerHTML =
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><circle cx="12" cy="12" r="3"/></svg>' +
+      '<span>Detect My Location</span>';
 
-    const msgs = {
+    var msgs = {
       1: 'Location access denied. Please allow location permission and try again.',
       2: 'Unable to determine your location. Check your network.',
       3: 'Location request timed out. Please try again.',
@@ -122,7 +123,7 @@
   }
 
   // ── Fetch recommendations ─────────────────────────────────────────
-  async function fetchRecommendations() {
+  function fetchRecommendations() {
     hide(nearbyError);
     hide(nearbyEmpty);
     hide(categoryFilters);
@@ -130,45 +131,50 @@
     nearbyGrid.innerHTML = '';
     show(nearbyLoading);
 
-    try {
-      const resp = await fetch('/get-recommendations/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          latitude: userLat,
-          longitude: userLon,
-          preferences: ['restaurant', 'cafe', 'park', 'event', 'market', 'game_zone'],
-        }),
+    fetch('/get-recommendations/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        latitude: userLat,
+        longitude: userLon,
+        preferences: ['restaurant', 'cafe', 'park', 'event', 'market', 'game_zone'],
+      }),
+    })
+      .then(function (resp) {
+        if (!resp.ok) {
+          return resp.json().catch(function () { return {}; }).then(function (d) {
+            throw new Error(d.error || 'Server error (' + resp.status + ')');
+          });
+        }
+        return resp.json();
+      })
+      .then(function (data) {
+        hide(nearbyLoading);
+
+        console.log('[SmartCampus] API returned', data.length, 'items');
+        console.log('[SmartCampus] Categories:', data.map(function (d) { return d.category }).join(', '));
+
+        if (!Array.isArray(data) || data.length === 0) {
+          show(nearbyEmpty);
+          return;
+        }
+
+        allResults = data;
+        currentFilter = 'all';
+
+        // Reset filter pills
+        var pills = document.querySelectorAll('.nearby-filter-pill');
+        pills.forEach(function (p) { p.classList.remove('active'); });
+        var allPill = document.querySelector('.nearby-filter-pill[data-cat="all"]');
+        if (allPill) allPill.classList.add('active');
+
+        show(categoryFilters);
+        renderCards(allResults);
+      })
+      .catch(function (e) {
+        hide(nearbyLoading);
+        showError(e.message || 'Failed to load recommendations.');
       });
-
-      if (!resp.ok) {
-        const data = await resp.json().catch(() => ({}));
-        throw new Error(data.error || `Server error (${resp.status})`);
-      }
-
-      const data = await resp.json();
-      hide(nearbyLoading);
-
-      if (!Array.isArray(data) || data.length === 0) {
-        show(nearbyEmpty);
-        return;
-      }
-
-      allResults = data;
-      currentFilter = 'all';
-
-      // Reset filter pills
-      document.querySelectorAll('.nearby-filter-pill').forEach(p => p.classList.remove('active'));
-      const allPill = document.querySelector('.nearby-filter-pill[data-cat="all"]');
-      if (allPill) allPill.classList.add('active');
-
-      show(categoryFilters);
-      renderCards(allResults);
-
-    } catch (e) {
-      hide(nearbyLoading);
-      showError(e.message || 'Failed to load recommendations.');
-    }
   }
 
   // ── Render cards ──────────────────────────────────────────────────
@@ -176,9 +182,19 @@
     nearbyGrid.innerHTML = '';
     hide(nearbyEmpty);
 
-    const filtered = currentFilter === 'all'
-      ? items
-      : items.filter(i => matchesCategory(i.category, currentFilter));
+    var filtered;
+    if (currentFilter === 'all') {
+      filtered = items;
+    } else {
+      filtered = [];
+      for (var i = 0; i < items.length; i++) {
+        if (matchesCategory(items[i].category, currentFilter)) {
+          filtered.push(items[i]);
+        }
+      }
+    }
+
+    console.log('[SmartCampus] Filter:', currentFilter, '→ matched', filtered.length, 'of', items.length);
 
     if (filtered.length === 0) {
       show(nearbyEmpty);
@@ -187,74 +203,77 @@
     }
 
     show(resultsInfo);
-    resultsCount.textContent = `Showing ${filtered.length} recommendation${filtered.length > 1 ? 's' : ''}`;
+    resultsCount.textContent = 'Showing ' + filtered.length + ' recommendation' + (filtered.length > 1 ? 's' : '');
 
-    filtered.forEach((item, idx) => {
-      const card = createCard(item, idx);
-      nearbyGrid.appendChild(card);
-    });
+    for (var j = 0; j < filtered.length; j++) {
+      nearbyGrid.appendChild(createCard(filtered[j], j));
+    }
   }
 
   function createCard(item, index) {
-    const card = document.createElement('div');
+    var card = document.createElement('div');
     card.className = 'nearby-card';
-    card.style.animationDelay = `${index * 0.06}s`;
+    card.style.animationDelay = (index * 0.06) + 's';
 
-    const icon = CATEGORY_ICONS[item.category] || CATEGORY_ICONS.other;
-    const srcStyle = SOURCE_COLORS[item.source] || SOURCE_COLORS.OSM;
-    const rating = item.rating != null ? `${parseFloat(item.rating).toFixed(1)} ★` : 'N/A';
-    const dist = item.distance_km != null ? `${item.distance_km} km` : '—';
-    const scoreDisplay = item.score != null ? item.score.toFixed(1) : '—';
+    var icon = CATEGORY_ICONS[item.category] || CATEGORY_ICONS.other;
+    var srcStyle = SOURCE_COLORS[item.source] || SOURCE_COLORS.OSM;
+    var rating = item.rating != null ? parseFloat(item.rating).toFixed(1) + ' ★' : 'N/A';
+    var dist = item.distance_km != null ? item.distance_km + ' km' : '—';
+    var scoreVal = item.score != null ? item.score : null;
+    var scoreDisplay = scoreVal != null ? scoreVal.toFixed(1) : '—';
+    var catLabel = (item.category || 'other').replace(/_/g, ' ');
+    catLabel = catLabel.charAt(0).toUpperCase() + catLabel.slice(1);
 
-    // Score colour
-    let scoreClass = 'score-neutral';
-    if (item.score > 3) scoreClass = 'score-high';
-    else if (item.score > 0) scoreClass = 'score-mid';
-    else if (item.score <= 0) scoreClass = 'score-low';
+    var scoreClass = 'score-neutral';
+    if (scoreVal !== null) {
+      if (scoreVal > 3) scoreClass = 'score-high';
+      else if (scoreVal > 0) scoreClass = 'score-mid';
+      else scoreClass = 'score-low';
+    }
 
-    card.innerHTML = `
-      <div class="nearby-card-header">
-        <span class="nearby-card-icon">${icon}</span>
-        <span class="nearby-card-source" style="background:${srcStyle.bg};color:${srcStyle.color};border-color:${srcStyle.border}">
-          ${item.source}
-        </span>
-      </div>
-      <h3 class="nearby-card-name">${escapeHtml(item.name)}</h3>
-      <span class="nearby-card-category">${capitalize(item.category.replace(/_/g, ' '))}</span>
-      <div class="nearby-card-meta">
-        <div class="nearby-meta-item">
-          <span class="nearby-meta-label">Rating</span>
-          <span class="nearby-meta-value">${rating}</span>
-        </div>
-        <div class="nearby-meta-item">
-          <span class="nearby-meta-label">Distance</span>
-          <span class="nearby-meta-value">${dist}</span>
-        </div>
-        <div class="nearby-meta-item">
-          <span class="nearby-meta-label">Score</span>
-          <span class="nearby-meta-value ${scoreClass}">${scoreDisplay}</span>
-        </div>
-      </div>
-      <div class="nearby-card-why">
-        <span class="nearby-why-label">Why Recommended</span>
-        <p class="nearby-why-text">${escapeHtml(item.why_recommended || '')}</p>
-      </div>
-    `;
+    card.innerHTML =
+      '<div class="nearby-card-header">' +
+      '<span class="nearby-card-icon">' + icon + '</span>' +
+      '<span class="nearby-card-source" style="background:' + srcStyle.bg + ';color:' + srcStyle.color + ';border-color:' + srcStyle.border + '">' +
+      item.source +
+      '</span>' +
+      '</div>' +
+      '<h3 class="nearby-card-name">' + escapeHtml(item.name) + '</h3>' +
+      '<span class="nearby-card-category">' + catLabel + '</span>' +
+      '<div class="nearby-card-meta">' +
+      '<div class="nearby-meta-item"><span class="nearby-meta-label">Rating</span><span class="nearby-meta-value">' + rating + '</span></div>' +
+      '<div class="nearby-meta-item"><span class="nearby-meta-label">Distance</span><span class="nearby-meta-value">' + dist + '</span></div>' +
+      '<div class="nearby-meta-item"><span class="nearby-meta-label">Score</span><span class="nearby-meta-value ' + scoreClass + '">' + scoreDisplay + '</span></div>' +
+      '</div>' +
+      '<div class="nearby-card-why">' +
+      '<span class="nearby-why-label">Why Recommended</span>' +
+      '<p class="nearby-why-text">' + escapeHtml(item.why_recommended || '') + '</p>' +
+      '</div>';
 
     return card;
   }
 
   // ── Category filters ──────────────────────────────────────────────
   if (categoryFilters) {
-    categoryFilters.addEventListener('click', e => {
-      const pill = e.target.closest('.nearby-filter-pill');
+    categoryFilters.addEventListener('click', function (e) {
+      var pill = e.target.closest('.nearby-filter-pill');
       if (!pill) return;
 
-      document.querySelectorAll('.nearby-filter-pill').forEach(p => p.classList.remove('active'));
+      console.log('[SmartCampus] Filter clicked:', pill.dataset.cat);
+
+      document.querySelectorAll('.nearby-filter-pill').forEach(function (p) { p.classList.remove('active'); });
       pill.classList.add('active');
       currentFilter = pill.dataset.cat;
+
+      console.log('[SmartCampus] allResults length:', allResults.length);
+      if (allResults.length > 0) {
+        console.log('[SmartCampus] First item category:', allResults[0].category);
+      }
+
       renderCards(allResults);
     });
+  } else {
+    console.warn('[SmartCampus] categoryFilters element not found!');
   }
 
   // ── Error helpers ─────────────────────────────────────────────────
@@ -267,26 +286,20 @@
 
   // ── Utilities ─────────────────────────────────────────────────────
   function escapeHtml(str) {
-    const div = document.createElement('div');
+    var div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
   }
 
-  function capitalize(str) {
-    return str.charAt(0).toUpperCase() + str.slice(1);
-  }
-
   // ── Event bindings ────────────────────────────────────────────────
   detectBtn.addEventListener('click', requestLocation);
-  retryBtn.addEventListener('click', () => {
+  retryBtn.addEventListener('click', function () {
     if (userLat && userLon) fetchRecommendations();
     else requestLocation();
   });
 
-  // ── Init: inject navbar then auto-detect ──────────────────────────
-  document.addEventListener('DOMContentLoaded', () => {
-    initShared();
-    requestLocation();
-  });
+  // ── Init ──────────────────────────────────────────────────────────
+  initShared();
+  requestLocation();
 
 })();

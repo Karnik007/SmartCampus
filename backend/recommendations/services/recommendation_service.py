@@ -15,7 +15,7 @@ from recommendations.utils.distance import haversine, haversine_km
 logger = logging.getLogger(__name__)
 
 CACHE_TTL = 300  # 5 minutes
-MAX_RESULTS = 15
+MAX_RESULTS = 30
 
 # Default user preference tags — used when none provided
 DEFAULT_PREFERENCES = ["restaurant", "cafe", "park", "event"]
@@ -23,49 +23,50 @@ DEFAULT_PREFERENCES = ["restaurant", "cafe", "park", "event"]
 
 def _compute_score(place: dict, user_lat: float, user_lon: float, preferences: list) -> float:
     """
-    AI scoring algorithm.
+    AI scoring algorithm — returns a value on a 0–10 scale.
 
-    score =
-        +3  if category matches a user preference tag
-        +2  if rating > 4
-        -(distance_in_meters / 500)
-        +1  if open_now
-        +2  if popular
+    Components (max 10):
+        +3.0  category matches a user preference
+        +2.0  rating bonus (scaled: 0–2 based on rating 0–5)
+        +3.0  proximity bonus (closer → higher, 0m = 3, 2000m = 0)
+        +1.0  open_now
+        +1.0  popular
     """
     score = 0.0
 
-    # Category match
+    # Category match  (+3)
     category = place.get("category", "").lower()
     if any(pref.lower() in category or category in pref.lower() for pref in preferences):
-        score += 3
+        score += 3.0
 
-    # Rating bonus
+    # Rating bonus  (+0 to +2, proportional)
     rating = place.get("rating")
     if rating is not None:
         try:
-            if float(rating) > 4:
-                score += 2
+            r = float(rating)
+            score += min(r / 5.0, 1.0) * 2.0   # e.g. 4.5 → 1.8
         except (TypeError, ValueError):
-            pass  # treat as neutral
+            pass
 
-    # Distance penalty
+    # Proximity bonus  (+0 to +3, linear decay over 2 km)
     p_lat = place.get("lat")
     p_lon = place.get("lon")
     if p_lat is not None and p_lon is not None:
         dist_m = haversine(user_lat, user_lon, p_lat, p_lon)
-        score -= dist_m / 500
+        proximity = max(0.0, 1.0 - dist_m / 2000.0)  # 1.0 at 0m, 0.0 at 2km+
+        score += proximity * 3.0
     else:
         dist_m = 0
 
-    # Open now bonus
+    # Open now bonus  (+1)
     if place.get("open_now"):
-        score += 1
+        score += 1.0
 
-    # Popularity bonus
+    # Popularity bonus  (+1)
     if place.get("popular"):
-        score += 2
+        score += 1.0
 
-    return round(score, 2)
+    return round(score, 1)
 
 
 def _generate_why(place: dict, dist_km: float, preferences: list) -> str:

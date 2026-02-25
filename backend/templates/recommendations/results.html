@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
         rel="stylesheet" />
-    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=6" />
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20260225b" />
 </head>
 
 <body>
@@ -93,7 +93,7 @@
                 <span id="resultsCount"></span>
             </div>
 
-            <!-- Results grid (nearby cards) -->
+            <!-- Results grid -->
             <div class="nearby-cards-grid" id="nearbyGrid"></div>
 
         </div>
@@ -105,9 +105,9 @@
         </div>
     </footer>
 
-    <script src="{% static 'js/api.js' %}?v=6"></script>
-    <script src="{% static 'js/auth.js' %}?v=6"></script>
-    <script src="{% static 'js/shared.js' %}?v=6"></script>
+    <script src="{% static 'js/api.js' %}?v=20260225b"></script>
+    <script src="{% static 'js/auth.js' %}?v=20260225b"></script>
+    <script src="{% static 'js/shared.js' %}?v=20260225b"></script>
     <script>
         {% if user.is_authenticated %}
         if (!localStorage.getItem('smartcampus-user')) {
@@ -122,7 +122,260 @@
         localStorage.removeItem('smartcampus-user');
         {% endif %}
     </script>
-    <script src="{% static 'js/results.js' %}?v=6"></script>
+
+    <!-- ===== INLINE RESULTS JS – NO CACHE ISSUES ===== -->
+    <script>
+        (function () {
+            'use strict';
+
+            /* ── DOM refs ─────────────────────────────── */
+            var detectBtn = document.getElementById('detectBtn');
+            var locationLabel = document.getElementById('locationLabel');
+            var locationCoords = document.getElementById('locationCoords');
+            var nearbyLoading = document.getElementById('nearbyLoading');
+            var nearbyError = document.getElementById('nearbyError');
+            var nearbyEmpty = document.getElementById('nearbyEmpty');
+            var nearbyGrid = document.getElementById('nearbyGrid');
+            var errorText = document.getElementById('errorText');
+            var retryBtn = document.getElementById('retryBtn');
+            var categoryFilters = document.getElementById('categoryFilters');
+            var resultsInfo = document.getElementById('resultsInfo');
+            var resultsCount = document.getElementById('resultsCount');
+
+            var allResults = [];
+            var currentFilter = 'all';
+            var userLat = null;
+            var userLon = null;
+
+            function showEl(el) { if (el) el.style.display = ''; }
+            function hideEl(el) { if (el) el.style.display = 'none'; }
+
+            var CATEGORY_ICONS = {
+                restaurant: '🍽️', cafe: '☕', market: '🛒', shop: '🛍️',
+                park: '🌳', game_zone: '🎮', leisure: '🏊', tourism: '🗺️',
+                event: '🎉', place: '📍', other: '📌'
+            };
+
+            var SOURCE_COLORS = {
+                OSM: { bg: 'rgba(16,185,129,0.15)', color: '#10b981', border: 'rgba(16,185,129,0.3)' },
+                Foursquare: { bg: 'rgba(99,102,241,0.15)', color: '#818cf8', border: 'rgba(99,102,241,0.3)' },
+                Eventbrite: { bg: 'rgba(249,115,22,0.15)', color: '#fb923c', border: 'rgba(249,115,22,0.3)' }
+            };
+
+            /* ── Category matching ────────────────────── */
+            /* Each filter pill maps to multiple possible API category values */
+            var CATEGORY_MAP = {
+                restaurant: ['restaurant'],
+                cafe: ['cafe'],
+                market: ['market', 'shop'],
+                game_zone: ['game_zone', 'leisure'],
+                park: ['park'],
+                event: ['event', 'tourism']
+            };
+
+            function matchesFilter(itemCategory, filterKey) {
+                if (filterKey === 'all') return true;
+                if (!itemCategory) return false;
+                var cat = itemCategory.toLowerCase().trim();
+                var allowed = CATEGORY_MAP[filterKey];
+                if (!allowed) return false;
+                for (var i = 0; i < allowed.length; i++) {
+                    if (cat === allowed[i]) return true;
+                }
+                return false;
+            }
+
+            /* ── Geolocation ──────────────────────────── */
+            function requestLocation() {
+                if (!navigator.geolocation) {
+                    showError('Geolocation is not supported by your browser.');
+                    return;
+                }
+                locationLabel.textContent = 'Detecting location…';
+                detectBtn.disabled = true;
+                detectBtn.querySelector('span').textContent = 'Detecting…';
+
+                navigator.geolocation.getCurrentPosition(
+                    function (pos) {
+                        userLat = pos.coords.latitude;
+                        userLon = pos.coords.longitude;
+                        locationLabel.textContent = 'Location detected ✓';
+                        locationCoords.textContent = userLat.toFixed(4) + ', ' + userLon.toFixed(4);
+                        detectBtn.disabled = false;
+                        detectBtn.querySelector('span').textContent = 'Refresh Location';
+                        fetchRecommendations();
+                    },
+                    function (err) {
+                        detectBtn.disabled = false;
+                        detectBtn.querySelector('span').textContent = 'Detect My Location';
+                        var msgs = {
+                            1: 'Location access denied. Please allow location permission and try again.',
+                            2: 'Unable to determine your location. Check your network.',
+                            3: 'Location request timed out. Please try again.'
+                        };
+                        showError(msgs[err.code] || 'Could not get your location.');
+                    },
+                    { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+                );
+            }
+
+            /* ── Fetch recommendations ────────────────── */
+            function fetchRecommendations() {
+                hideEl(nearbyError);
+                hideEl(nearbyEmpty);
+                hideEl(categoryFilters);
+                hideEl(resultsInfo);
+                nearbyGrid.innerHTML = '';
+                showEl(nearbyLoading);
+
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', '/get-recommendations/', true);
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState !== 4) return;
+
+                    hideEl(nearbyLoading);
+
+                    if (xhr.status !== 200) {
+                        showError('Server error (' + xhr.status + '). Please try again.');
+                        return;
+                    }
+
+                    var data;
+                    try { data = JSON.parse(xhr.responseText); }
+                    catch (e) { showError('Invalid response from server.'); return; }
+
+                    if (!data || !data.length) {
+                        showEl(nearbyEmpty);
+                        return;
+                    }
+
+                    allResults = data;
+                    currentFilter = 'all';
+
+                    /* Reset filter pills */
+                    var pills = document.querySelectorAll('.nearby-filter-pill');
+                    for (var i = 0; i < pills.length; i++) pills[i].classList.remove('active');
+                    var allPill = document.querySelector('[data-cat="all"]');
+                    if (allPill) allPill.classList.add('active');
+
+                    showEl(categoryFilters);
+                    renderCards();
+                };
+
+                xhr.send(JSON.stringify({
+                    latitude: userLat,
+                    longitude: userLon,
+                    preferences: ['restaurant', 'cafe', 'park', 'event', 'market', 'game_zone']
+                }));
+            }
+
+            /* ── Render cards ─────────────────────────── */
+            function renderCards() {
+                nearbyGrid.innerHTML = '';
+                hideEl(nearbyEmpty);
+
+                var filtered = [];
+                for (var i = 0; i < allResults.length; i++) {
+                    if (matchesFilter(allResults[i].category, currentFilter)) {
+                        filtered.push(allResults[i]);
+                    }
+                }
+
+                if (filtered.length === 0) {
+                    showEl(nearbyEmpty);
+                    hideEl(resultsInfo);
+                    return;
+                }
+
+                showEl(resultsInfo);
+                resultsCount.textContent = 'Showing ' + filtered.length + ' recommendation' + (filtered.length > 1 ? 's' : '');
+
+                for (var j = 0; j < filtered.length; j++) {
+                    nearbyGrid.appendChild(buildCard(filtered[j], j));
+                }
+            }
+
+            function buildCard(item, idx) {
+                var card = document.createElement('div');
+                card.className = 'nearby-card';
+                card.style.animationDelay = (idx * 0.06) + 's';
+
+                var icon = CATEGORY_ICONS[item.category] || '📌';
+                var src = SOURCE_COLORS[item.source] || SOURCE_COLORS.OSM;
+
+                var rating = (item.rating != null) ? parseFloat(item.rating).toFixed(1) + ' ★' : 'N/A';
+                var dist = (item.distance_km != null) ? item.distance_km + ' km' : '—';
+                var scr = (item.score != null) ? item.score.toFixed(1) + '/10' : '—';
+
+                var catLabel = (item.category || 'other').replace(/_/g, ' ');
+                catLabel = catLabel.charAt(0).toUpperCase() + catLabel.slice(1);
+
+                var scoreClass = 'score-neutral';
+                if (item.score != null) {
+                    if (item.score >= 6) scoreClass = 'score-high';
+                    else if (item.score >= 3) scoreClass = 'score-mid';
+                    else scoreClass = 'score-low';
+                }
+
+                card.innerHTML =
+                    '<div class="nearby-card-header">' +
+                    '<span class="nearby-card-icon">' + icon + '</span>' +
+                    '<span class="nearby-card-source" style="background:' + src.bg + ';color:' + src.color + ';border-color:' + src.border + '">' + (item.source || 'OSM') + '</span>' +
+                    '</div>' +
+                    '<h3 class="nearby-card-name">' + esc(item.name) + '</h3>' +
+                    '<span class="nearby-card-category">' + catLabel + '</span>' +
+                    '<div class="nearby-card-meta">' +
+                    '<div class="nearby-meta-item"><span class="nearby-meta-label">Rating</span><span class="nearby-meta-value">' + rating + '</span></div>' +
+                    '<div class="nearby-meta-item"><span class="nearby-meta-label">Distance</span><span class="nearby-meta-value">' + dist + '</span></div>' +
+                    '<div class="nearby-meta-item"><span class="nearby-meta-label">Score</span><span class="nearby-meta-value ' + scoreClass + '">' + scr + '</span></div>' +
+                    '</div>' +
+                    '<div class="nearby-card-why">' +
+                    '<span class="nearby-why-label">Why Recommended</span>' +
+                    '<p class="nearby-why-text">' + esc(item.why_recommended || '') + '</p>' +
+                    '</div>';
+
+                return card;
+            }
+
+            /* ── Filter click handling ────────────────── */
+            var filterBtns = document.querySelectorAll('.nearby-filter-pill');
+            for (var f = 0; f < filterBtns.length; f++) {
+                filterBtns[f].addEventListener('click', function () {
+                    for (var k = 0; k < filterBtns.length; k++) filterBtns[k].classList.remove('active');
+                    this.classList.add('active');
+                    currentFilter = this.getAttribute('data-cat');
+                    renderCards();
+                });
+            }
+
+            /* ── Helpers ──────────────────────────────── */
+            function showError(msg) {
+                hideEl(nearbyLoading);
+                hideEl(nearbyEmpty);
+                errorText.textContent = msg;
+                showEl(nearbyError);
+            }
+
+            function esc(s) {
+                var d = document.createElement('div');
+                d.textContent = s || '';
+                return d.innerHTML;
+            }
+
+            /* ── Event bindings ───────────────────────── */
+            detectBtn.addEventListener('click', requestLocation);
+            retryBtn.addEventListener('click', function () {
+                if (userLat && userLon) fetchRecommendations();
+                else requestLocation();
+            });
+
+            /* ── Init ─────────────────────────────────── */
+            initShared();
+            requestLocation();
+        })();
+    </script>
+
 </body>
 
 </html>
