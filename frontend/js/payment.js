@@ -4,7 +4,7 @@
    =================================================== */
 
 document.addEventListener('DOMContentLoaded', async () => {
-    if (!Auth.guard()) return;
+    // Note: Django's @login_required handles auth server-side
     initShared();
 
     const orderRaw = sessionStorage.getItem('smartcampus-order');
@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('orderItems').innerHTML = `
             <div class="empty-state">
                 <p>No items in your order.</p>
-                <a href="results.html" class="btn btn-primary btn-sm" style="margin-top:1rem;">Browse Recommendations</a>
+                <a href="/results/" class="btn btn-primary btn-sm" style="margin-top:1rem;">Browse Recommendations</a>
             </div>
         `;
         loadOrderHistory();

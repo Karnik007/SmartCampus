@@ -4,7 +4,7 @@
    =================================================== */
 
 document.addEventListener('DOMContentLoaded', async () => {
-    if (!Auth.guard()) return;
+    // Note: Django's @login_required handles auth server-side
     initShared();
 
     // Fetch trust data from backend or use defaults

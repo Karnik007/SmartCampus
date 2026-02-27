@@ -1,0 +1,137 @@
+[
+  {
+    "name": "Sudamache Pohe",
+    "category": "restaurant",
+    "distance_km": 0.06,
+    "rating": null,
+    "source": "OSM",
+    "score": 2.89,
+    "why_recommended": "Matches your interest in restaurant \u00b7 Very close to you \u00b7 Verified by OSM"
+  },
+  {
+    "name": "Captain Coffee.",
+    "category": "cafe",
+    "distance_km": 0.11,
+    "rating": null,
+    "source": "OSM",
+    "score": 2.79,
+    "why_recommended": "Matches your interest in cafe \u00b7 Very close to you \u00b7 Verified by OSM"
+  },
+  {
+    "name": "Samadhan",
+    "category": "restaurant",
+    "distance_km": 0.52,
+    "rating": null,
+    "source": "OSM",
+    "score": 1.97,
+    "why_recommended": "Matches your interest in restaurant \u00b7 Within walking distance \u00b7 Verified by OSM"
+  },
+  {
+    "name": "NG park",
+    "category": "park",
+    "distance_km": 0.57,
+    "rating": null,
+    "source": "OSM",
+    "score": 1.87,
+    "why_recommended": "Matches your interest in park \u00b7 Within walking distance \u00b7 Verified by OSM"
+  },
+  {
+    "name": "test rest",
+    "category": "restaurant",
+    "distance_km": 0.64,
+    "rating": null,
+    "source": "OSM",
+    "score": 1.72,
+    "why_recommended": "Matches your interest in restaurant \u00b7 Within walking distance \u00b7 Verified by OSM"
+  },
+  {
+    "name": "Aalok",
+    "category": "restaurant",
+    "distance_km": 0.66,
+    "rating": null,
+    "source": "OSM",
+    "score": 1.67,
+    "why_recommended": "Matches your interest in restaurant \u00b7 Within walking distance \u00b7 Verified by OSM"
+  },
+  {
+    "name": "test cafe",
+    "category": "cafe",
+    "distance_km": 0.68,
+    "rating": null,
+    "source": "OSM",
+    "score": 1.65,
+    "why_recommended": "Matches your interest in cafe \u00b7 Within walking distance \u00b7 Verified by OSM"
+  },
+  {
+    "name": "test park",
+    "category": "park",
+    "distance_km": 0.69,
+    "rating": null,
+    "source": "OSM",
+    "score": 1.63,
+    "why_recommended": "Matches your interest in park \u00b7 Within walking distance \u00b7 Verified by OSM"
+  },
+  {
+    "name": "Agatya",
+    "category": "restaurant",
+    "distance_km": 0.71,
+    "rating": null,
+    "source": "OSM",
+    "score": 1.58,
+    "why_recommended": "Matches your interest in restaurant \u00b7 Within walking distance \u00b7 Verified by OSM"
+  },
+  {
+    "name": "Green Park",
+    "category": "park",
+    "distance_km": 0.71,
+    "rating": null,
+    "source": "OSM",
+    "score": 1.57,
+    "why_recommended": "Matches your interest in park \u00b7 Within walking distance \u00b7 Verified by OSM"
+  },
+  {
+    "name": "Joshi wadewale",
+    "category": "restaurant",
+    "distance_km": 0.79,
+    "rating": null,
+    "source": "OSM",
+    "score": 1.42,
+    "why_recommended": "Matches your interest in restaurant \u00b7 Within walking distance \u00b7 Verified by OSM"
+  },
+  {
+    "name": "Mochi Cafe",
+    "category": "cafe",
+    "distance_km": 0.81,
+    "rating": null,
+    "source": "OSM",
+    "score": 1.39,
+    "why_recommended": "Matches your interest in cafe \u00b7 Within walking distance \u00b7 Verified by OSM"
+  },
+  {
+    "name": "Gandharva",
+    "category": "restaurant",
+    "distance_km": 0.84,
+    "rating": null,
+    "source": "OSM",
+    "score": 1.32,
+    "why_recommended": "Matches your interest in restaurant \u00b7 Within walking distance \u00b7 Verified by OSM"
+  },
+  {
+    "name": "Shri Niyanand Bhuvan",
+    "category": "restaurant",
+    "distance_km": 0.88,
+    "rating": null,
+    "source": "OSM",
+    "score": 1.25,
+    "why_recommended": "Matches your interest in restaurant \u00b7 Within walking distance \u00b7 Verified by OSM"
+  },
+  {
+    "name": "Cafe Coffee Day",
+    "category": "cafe",
+    "distance_km": 0.92,
+    "rating": null,
+    "source": "OSM",
+    "score": 1.16,
+    "why_recommended": "Matches your interest in cafe \u00b7 Within walking distance \u00b7 Verified by OSM"
+  }
+]

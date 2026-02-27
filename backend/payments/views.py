@@ -12,6 +12,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
+from accounts.models import UserProfile
 from .models import Order, Payment
 from .serializers import (
     CreateOrderSerializer, VerifyPaymentSerializer,
@@ -132,7 +133,7 @@ class VerifyPaymentView(APIView):
             )
 
             # Update user profile stats
-            profile = request.user.profile
+            profile, _ = UserProfile.objects.get_or_create(user=request.user)
             profile.total_orders += 1
             profile.total_spent += order.total_amount
             profile.save(update_fields=['total_orders', 'total_spent'])

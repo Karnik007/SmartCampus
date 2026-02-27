@@ -1,5 +1,6 @@
 """Payments serializers."""
 
+from decimal import Decimal, InvalidOperation
 from rest_framework import serializers
 from .models import Order, Payment
 
@@ -24,12 +25,17 @@ class CreateOrderSerializer(serializers.Serializer):
     notes = serializers.CharField(required=False, default='')
 
     def validate_items(self, items):
-        total = 0
+        total = Decimal('0')
         for item in items:
             if 'price' not in item or 'name' not in item:
                 raise serializers.ValidationError('Each item must have "name" and "price".')
-            price = float(item['price'])
-            qty = int(item.get('quantity', 1))
+
+            try:
+                price = Decimal(str(item['price']))
+                qty = int(item.get('quantity', 1))
+            except (InvalidOperation, ValueError, TypeError):
+                raise serializers.ValidationError('Invalid price or quantity format.')
+
             if price < 0 or qty < 1:
                 raise serializers.ValidationError('Invalid price or quantity.')
             total += price * qty

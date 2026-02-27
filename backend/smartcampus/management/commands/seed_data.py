@@ -8,14 +8,14 @@ from recommendations.models import Canteen, Tag, FoodItem, Event
 
 
 CANTEENS = [
-    {'name': 'Main Campus Canteen', 'campus_area': 'main'},
-    {'name': 'Engineering Block Café', 'campus_area': 'engineering'},
-    {'name': 'Food Court', 'campus_area': 'main'},
-    {'name': 'Auditorium Hall A', 'campus_area': 'main'},
-    {'name': 'Open Air Theatre', 'campus_area': 'main'},
-    {'name': 'North Block Canteen', 'campus_area': 'north'},
-    {'name': 'Sports Complex', 'campus_area': 'sports'},
-    {'name': 'International Food Court', 'campus_area': 'main'},
+    {'name': 'Main Campus Canteen', 'campus_area': 'main', 'latitude': 18.5209, 'longitude': 73.8568},
+    {'name': 'Engineering Block Café', 'campus_area': 'engineering', 'latitude': 18.5216, 'longitude': 73.8576},
+    {'name': 'Food Court', 'campus_area': 'main', 'latitude': 18.5203, 'longitude': 73.8559},
+    {'name': 'Auditorium Hall A', 'campus_area': 'main', 'latitude': 18.5199, 'longitude': 73.8571},
+    {'name': 'Open Air Theatre', 'campus_area': 'main', 'latitude': 18.5195, 'longitude': 73.8562},
+    {'name': 'North Block Canteen', 'campus_area': 'north', 'latitude': 18.5224, 'longitude': 73.8561},
+    {'name': 'Sports Complex', 'campus_area': 'sports', 'latitude': 18.5189, 'longitude': 73.8582},
+    {'name': 'International Food Court', 'campus_area': 'main', 'latitude': 18.5211, 'longitude': 73.8553},
 ]
 
 TAGS = [
@@ -124,8 +124,25 @@ class Command(BaseCommand):
         canteen_map = {}
         for c in CANTEENS:
             obj, created = Canteen.objects.get_or_create(
-                name=c['name'], defaults={'campus_area': c['campus_area']}
+                name=c['name'],
+                defaults={
+                    'campus_area': c['campus_area'],
+                    'latitude': c.get('latitude'),
+                    'longitude': c.get('longitude'),
+                }
             )
+            update_fields = []
+            if obj.campus_area != c['campus_area']:
+                obj.campus_area = c['campus_area']
+                update_fields.append('campus_area')
+            if c.get('latitude') is not None and obj.latitude is None:
+                obj.latitude = c['latitude']
+                update_fields.append('latitude')
+            if c.get('longitude') is not None and obj.longitude is None:
+                obj.longitude = c['longitude']
+                update_fields.append('longitude')
+            if update_fields:
+                obj.save(update_fields=update_fields)
             canteen_map[c['name']] = obj
             status = 'Created' if created else 'Exists'
             self.stdout.write(f'  Canteen: {obj.name} [{status}]')
@@ -188,4 +205,4 @@ class Command(BaseCommand):
                         obj.tags.add(tag)
             self.stdout.write(f'  Event: {obj.name} [{"Created" if created else "Exists"}]')
 
-        self.stdout.write(self.style.SUCCESS('\n✅ Database seeded successfully!'))
+        self.stdout.write(self.style.SUCCESS('\nDatabase seeded successfully!'))

@@ -66,7 +66,8 @@ def fetch_nearby_places(lat: float, lon: float, radius: int = 2000) -> list[dict
     params = {
         "ll": f"{lat},{lon}",
         "radius": radius,
-        "limit": 10,
+        "limit": 50,
+        "sort": "DISTANCE",
     }
 
     try:
@@ -82,9 +83,12 @@ def fetch_nearby_places(lat: float, lon: float, radius: int = 2000) -> list[dict
         logger.warning("Foursquare API timed out for (%.4f, %.4f)", lat, lon)
         return []
     except requests.exceptions.HTTPError as exc:
-        status_code = exc.response.status_code if exc.response else "?"
+        status_code = exc.response.status_code if exc.response is not None else None
+        error_text = str(exc)
         if status_code == 429:
             logger.warning("Foursquare API rate limit hit")
+        elif status_code in (401, 403, 404) or any(code in error_text for code in ("401", "403", "404")):
+            logger.warning("Foursquare API not usable (status %s). Check API key/config; skipping source.", status_code)
         else:
             logger.error("Foursquare HTTP error %s: %s", status_code, exc)
         return []

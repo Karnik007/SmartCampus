@@ -3,7 +3,7 @@
    JWT token management, auto-refresh, and API helpers
    =================================================== */
 
-const API_BASE = 'http://localhost:8000/api';
+const API_BASE = '/api';
 
 const SmartAPI = {
 

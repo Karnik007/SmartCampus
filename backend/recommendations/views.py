@@ -8,6 +8,8 @@ from rest_framework import status, generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.core.cache import cache
 
 from .models import FoodItem, Event, UserPreference
 from .serializers import (
@@ -114,6 +116,7 @@ def dashboard_view(request):
 
 
 @login_required
+@ensure_csrf_cookie
 def results_view(request):
     """GET /results/ – Recommendation results page."""
     return render(request, 'recommendations/results.html')
@@ -130,7 +133,6 @@ def trust_view(request):
 # ============================================
 import json
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from recommendations.services.recommendation_service import get_nearby_recommendations
 
@@ -142,7 +144,21 @@ def nearby_view(request):
     return redirect('results')
 
 
-@csrf_exempt
+def _too_many_requests(request) -> bool:
+    """Simple per-minute limiter for nearby recommendation calls."""
+    user_key = str(request.user.id) if request.user.is_authenticated else request.META.get('REMOTE_ADDR', 'anon')
+    cache_key = f"nearby_rate:{user_key}"
+    count = cache.get(cache_key)
+    if count is None:
+        cache.set(cache_key, 1, timeout=60)
+        return False
+    if count >= 30:
+        return True
+    cache.incr(cache_key)
+    return False
+
+
+@login_required
 @require_POST
 def nearby_recommendations_api(request):
     """
@@ -174,9 +190,22 @@ def nearby_recommendations_api(request):
     preferences = body.get("preferences", [])
     if not isinstance(preferences, list):
         preferences = []
+    accuracy_m = body.get("accuracy_m")
+    try:
+        accuracy_m = float(accuracy_m) if accuracy_m is not None else None
+    except (TypeError, ValueError):
+        accuracy_m = None
+
+    if _too_many_requests(request):
+        return JsonResponse({"error": "Rate limit exceeded. Please retry in a minute."}, status=429)
 
     try:
-        results = get_nearby_recommendations(lat, lon, preferences or None)
+        results = get_nearby_recommendations(
+            lat,
+            lon,
+            preferences or None,
+            accuracy_m=accuracy_m,
+        )
     except Exception as exc:
         logger.error("Recommendation engine error: %s", exc)
         return JsonResponse({"error": "Failed to fetch recommendations. Please try again."}, status=500)

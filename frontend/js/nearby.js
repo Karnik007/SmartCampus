@@ -1,31 +1,29 @@
 /**
  * SmartCampus AI – Nearby Recommendations (Frontend)
- * Multi-strategy geolocation → POST /get-recommendations/ → renders cards.
+ * Uses Geolocation API → POST /get-recommendations/ → renders cards.
  */
 
 (function () {
   'use strict';
 
   // ── DOM refs ──────────────────────────────────────────────────────
-  const detectBtn = document.getElementById('detectBtn');
-  const locationLabel = document.getElementById('locationLabel');
-  const locationCoords = document.getElementById('locationCoords');
-  const nearbyLoading = document.getElementById('nearbyLoading');
-  const nearbyError = document.getElementById('nearbyError');
-  const nearbyEmpty = document.getElementById('nearbyEmpty');
-  const nearbyGrid = document.getElementById('nearbyGrid');
-  const errorText = document.getElementById('errorText');
-  const retryBtn = document.getElementById('retryBtn');
+  const detectBtn       = document.getElementById('detectBtn');
+  const locationLabel   = document.getElementById('locationLabel');
+  const locationCoords  = document.getElementById('locationCoords');
+  const nearbyLoading   = document.getElementById('nearbyLoading');
+  const nearbyError     = document.getElementById('nearbyError');
+  const nearbyEmpty     = document.getElementById('nearbyEmpty');
+  const nearbyGrid      = document.getElementById('nearbyGrid');
+  const errorText       = document.getElementById('errorText');
+  const retryBtn        = document.getElementById('retryBtn');
   const categoryFilters = document.getElementById('categoryFilters');
-  const resultsInfo = document.getElementById('resultsInfo');
-  const resultsCount = document.getElementById('resultsCount');
+  const resultsInfo     = document.getElementById('resultsInfo');
+  const resultsCount    = document.getElementById('resultsCount');
 
-  let allResults = [];
+  let allResults    = [];
   let currentFilter = 'all';
-  let userLat = null;
-  let userLon = null;
-  let locationResolved = false;
-  let watchId = null;
+  let userLat       = null;
+  let userLon       = null;
 
   // ── Helpers ───────────────────────────────────────────────────────
   const show = el => { if (el) el.style.display = ''; };
@@ -33,100 +31,47 @@
 
   const CATEGORY_ICONS = {
     restaurant: '🍽️',
-    cafe: '☕',
-    market: '🛒',
-    shop: '🛍️',
-    park: '🌳',
-    game_zone: '🎮',
-    leisure: '🏊',
-    tourism: '🗺️',
-    event: '🎉',
-    place: '📍',
-    other: '📌',
+    cafe:       '☕',
+    market:     '🛒',
+    shop:       '🛍️',
+    park:       '🌳',
+    game_zone:  '🎮',
+    leisure:    '🏊',
+    tourism:    '🗺️',
+    event:      '🎉',
+    place:      '📍',
+    other:      '📌',
   };
 
   const SOURCE_COLORS = {
-    OSM: { bg: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: 'rgba(16, 185, 129, 0.3)' },
+    OSM:        { bg: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: 'rgba(16, 185, 129, 0.3)' },
     Foursquare: { bg: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', border: 'rgba(99, 102, 241, 0.3)' },
     Eventbrite: { bg: 'rgba(249, 115, 22, 0.15)', color: '#fb923c', border: 'rgba(249, 115, 22, 0.3)' },
-    SmartCampus: { bg: 'rgba(14, 165, 233, 0.15)', color: '#38bdf8', border: 'rgba(14, 165, 233, 0.35)' },
   };
 
-  // ── Geolocation (Multi-Strategy) ──────────────────────────────────
+  // ── Geolocation ───────────────────────────────────────────────────
   function requestLocation() {
     if (!navigator.geolocation) {
-      fetchLocationFromIP();
+      showError('Geolocation is not supported by your browser.');
       return;
     }
 
-    locationResolved = false;
     locationLabel.textContent = 'Detecting location…';
     detectBtn.disabled = true;
     detectBtn.innerHTML = `<div class="nearby-btn-spinner"></div><span>Detecting…</span>`;
 
-    if (watchId !== null) {
-      navigator.geolocation.clearWatch(watchId);
-      watchId = null;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        if (!locationResolved) onLocationFound(pos.coords.latitude, pos.coords.longitude, 'GPS');
-      },
-      err => {
-        console.warn('[SmartCampus] getCurrentPosition failed:', err.message);
-        watchId = navigator.geolocation.watchPosition(
-          pos => {
-            if (locationResolved) return;
-            onLocationFound(pos.coords.latitude, pos.coords.longitude, 'GPS');
-            if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
-          },
-          () => { if (!locationResolved) fetchLocationFromIP(); },
-          { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
-        );
-        setTimeout(() => {
-          if (!locationResolved) {
-            if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
-            fetchLocationFromIP();
-          }
-        }, 12000);
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 120000 }
-    );
+    navigator.geolocation.getCurrentPosition(onLocationSuccess, onLocationError, {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 60000,
+    });
   }
 
-  function fetchLocationFromIP() {
-    if (locationResolved) return;
-    locationLabel.textContent = 'Estimating location…';
+  function onLocationSuccess(pos) {
+    userLat = pos.coords.latitude;
+    userLon = pos.coords.longitude;
 
-    fetch('https://ipapi.co/json/')
-      .then(r => r.json())
-      .then(data => {
-        if (data && data.latitude && data.longitude) onLocationFound(data.latitude, data.longitude, 'IP');
-        else throw new Error('No coords');
-      })
-      .catch(() => {
-        fetch('http://ip-api.com/json/?fields=lat,lon,status')
-          .then(r => r.json())
-          .then(data => {
-            if (data && data.status === 'success') onLocationFound(data.lat, data.lon, 'IP');
-            else throw new Error('fail');
-          })
-          .catch(() => onLocationFound(18.5204, 73.8567, 'Default'));
-      });
-  }
-
-  function onLocationFound(lat, lon, source) {
-    if (locationResolved) return;
-    locationResolved = true;
-    userLat = lat;
-    userLon = lon;
-
-    let label = 'Location detected ✓';
-    if (source === 'IP') label = 'Approximate location (IP) ✓';
-    if (source === 'Default') label = 'Using campus location';
-
-    locationLabel.textContent = label;
+    locationLabel.textContent = 'Location detected ✓';
     locationCoords.textContent = `${userLat.toFixed(4)}, ${userLon.toFixed(4)}`;
     detectBtn.disabled = false;
     detectBtn.innerHTML = `
@@ -137,8 +82,25 @@
       </svg>
       <span>Refresh Location</span>`;
 
-    console.log(`[SmartCampus] Location via ${source}: ${lat.toFixed(4)}, ${lon.toFixed(4)}`);
     fetchRecommendations();
+  }
+
+  function onLocationError(err) {
+    detectBtn.disabled = false;
+    detectBtn.innerHTML = `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+      <span>Detect My Location</span>`;
+
+    const msgs = {
+      1: 'Location access denied. Please allow location permission.',
+      2: 'Unable to determine your location. Check your network.',
+      3: 'Location request timed out. Please try again.',
+    };
+    showError(msgs[err.code] || 'Could not get your location.');
   }
 
   // ── Fetch recommendations ─────────────────────────────────────────
@@ -151,24 +113,15 @@
     show(nearbyLoading);
 
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 35000);
-
       const resp = await fetch('/get-recommendations/', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': getCsrfToken(),
-        },
-        signal: controller.signal,
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           latitude: userLat,
           longitude: userLon,
           preferences: getSelectedPreferences(),
         }),
       });
-
-      clearTimeout(timeoutId);
 
       if (!resp.ok) {
         const data = await resp.json().catch(() => ({}));
@@ -183,22 +136,19 @@
         return;
       }
 
-      allResults = data;
+      allResults    = data;
       currentFilter = 'all';
       show(categoryFilters);
       renderCards(allResults);
 
     } catch (e) {
       hide(nearbyLoading);
-      if (e.name === 'AbortError') {
-        showError('Request timed out. Please try again.');
-        return;
-      }
       showError(e.message || 'Failed to load recommendations.');
     }
   }
 
   function getSelectedPreferences() {
+    // Read active filter pills (excluding 'all')
     const pills = document.querySelectorAll('.nearby-filter-pill.active');
     const prefs = [];
     pills.forEach(p => {
@@ -206,17 +156,6 @@
       if (cat && cat !== 'all') prefs.push(cat);
     });
     return prefs.length ? prefs : ['restaurant', 'cafe', 'park', 'event', 'market', 'game_zone'];
-  }
-
-  function getCsrfToken() {
-    const name = 'csrftoken=';
-    const decoded = decodeURIComponent(document.cookie || '');
-    const parts = decoded.split(';');
-    for (let i = 0; i < parts.length; i++) {
-      const c = parts[i].trim();
-      if (c.indexOf(name) === 0) return c.substring(name.length, c.length);
-    }
-    return '';
   }
 
   // ── Render cards ──────────────────────────────────────────────────
@@ -248,21 +187,17 @@
     card.className = 'nearby-card';
     card.style.animationDelay = `${index * 0.06}s`;
 
-    const icon = CATEGORY_ICONS[item.category] || CATEGORY_ICONS.other;
+    const icon    = CATEGORY_ICONS[item.category] || CATEGORY_ICONS.other;
     const srcStyle = SOURCE_COLORS[item.source] || SOURCE_COLORS.OSM;
-    const rating = item.rating != null ? `${parseFloat(item.rating).toFixed(1)} ★` : 'N/A';
-    const dist = item.distance_km != null ? `${item.distance_km} km` : '—';
+    const rating  = item.rating != null ? `${parseFloat(item.rating).toFixed(1)} ★` : 'N/A';
+    const dist    = item.distance_km != null ? `${item.distance_km} km` : '—';
     const scoreDisplay = item.score != null ? item.score.toFixed(1) : '—';
-    const locationText = item.location || 'Location unavailable';
-    const hasCoords = item.latitude != null && item.longitude != null;
-    const mapLink = hasCoords ? `https://www.google.com/maps?q=${item.latitude},${item.longitude}` : '';
 
+    // Score colour
     let scoreClass = 'score-neutral';
     if (item.score > 3) scoreClass = 'score-high';
     else if (item.score > 0) scoreClass = 'score-mid';
     else if (item.score <= 0) scoreClass = 'score-low';
-
-    const catLabel = (item.category || 'other').replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase());
 
     card.innerHTML = `
       <div class="nearby-card-header">
@@ -272,12 +207,7 @@
         </span>
       </div>
       <h3 class="nearby-card-name">${escapeHtml(item.name)}</h3>
-      <span class="nearby-card-category">${catLabel}</span>
-      <div class="nearby-card-location">
-        <span class="nearby-location-dot">📍</span>
-        <span class="nearby-location-text">${escapeHtml(locationText)}</span>
-        ${hasCoords ? `<a class="nearby-map-link" href="${mapLink}" target="_blank" rel="noopener">Map</a>` : ''}
-      </div>
+      <span class="nearby-card-category">${capitalize(item.category.replace('_', ' '))}</span>
       <div class="nearby-card-meta">
         <div class="nearby-meta-item">
           <span class="nearby-meta-label">Rating</span>
@@ -329,14 +259,15 @@
     return div.innerHTML;
   }
 
+  function capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+
   // ── Event bindings ────────────────────────────────────────────────
-  detectBtn.addEventListener('click', () => {
-    locationResolved = false;
-    requestLocation();
-  });
+  detectBtn.addEventListener('click', requestLocation);
   retryBtn.addEventListener('click', () => {
     if (userLat && userLon) fetchRecommendations();
-    else { locationResolved = false; requestLocation(); }
+    else requestLocation();
   });
 
   // Auto-detect on page load

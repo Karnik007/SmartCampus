@@ -6,8 +6,6 @@ Bridges django-allauth with the project's CustomUser model (email-based, no user
 import logging
 from allauth.account.adapter import DefaultAccountAdapter
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
-from allauth.exceptions import ImmediateHttpResponse
-from django.shortcuts import redirect
 
 from accounts.models import CustomUser, UserProfile
 

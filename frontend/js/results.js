@@ -1,363 +1,393 @@
 /* ===================================================
-   SmartCampus AI – Results Page Logic (v2)
-   Uses SmartAPI, adds "Order Now" functionality
+   SmartCampus AI – Results Page (v6 – Precise Location)
+   Strict GPS location → /get-recommendations/ with adaptive radius
    =================================================== */
 
-// ---- Dummy Data (fallback when backend is down) ----
-const DummyData = {
-  recommendations: [
-    {
-      id: 1, name: "South Indian Thali", type: "food", price: 120, rating: 4.5,
-      distance: 3, tags: ["Vegetarian", "South Indian", "Healthy"], dietary: "veg",
-      image: "🍛", canteen: "Main Campus Canteen",
-      reasons: [
-        "Fits within your ₹{budget} budget",
-        "Matches your vegetarian dietary preference",
-        "High rating (4.5 stars)",
-        "Close to your location (3 min walk)",
-        "Popular among students with similar preferences"
-      ]
-    },
-    {
-      id: 2, name: "Veggie Wrap Combo", type: "food", price: 90, rating: 4.2,
-      distance: 5, tags: ["Vegan", "Quick Bite", "Healthy"], dietary: "vegan",
-      image: "🌯", canteen: "Engineering Block Café",
-      reasons: [
-        "Fits within your ₹{budget} budget",
-        "Matches your vegan dietary preference",
-        "High rating (4.2 stars)",
-        "Quick meal option for busy schedules",
-        "Highly rated by health-conscious students"
-      ]
-    },
-    {
-      id: 3, name: "Chicken Biryani", type: "food", price: 180, rating: 4.7,
-      distance: 8, tags: ["Non-Veg", "Biryani", "Popular"], dietary: "non-veg",
-      image: "🍗", canteen: "Food Court",
-      reasons: [
-        "Fits within your ₹{budget} budget",
-        "Matches your non-veg dietary preference",
-        "Highest rated item (4.7 stars)",
-        "Most popular lunch choice on campus",
-        "Great value for the portion size"
-      ]
-    },
-    {
-      id: 4, name: "Tech Innovation Summit", type: "event", price: 50, rating: 4.8,
-      distance: 10, tags: ["Tech", "Networking", "Workshop"], dietary: "all",
-      image: "💻", canteen: "Auditorium Hall A",
-      reasons: [
-        "Entry fee within your ₹{budget} budget",
-        "Matches your interest in Tech Events",
-        "Highest rated campus event (4.8 stars)",
-        "Includes hands-on workshop session",
-        "Great networking opportunity"
-      ]
-    },
-    {
-      id: 5, name: "Acoustic Night", type: "event", price: 30, rating: 4.3,
-      distance: 6, tags: ["Music", "Cultural", "Evening"], dietary: "all",
-      image: "🎵", canteen: "Open Air Theatre",
-      reasons: [
-        "Entry fee within your ₹{budget} budget",
-        "Matches your interest in Music & Cultural events",
-        "Highly rated by attendees (4.3 stars)",
-        "Close to your location (6 min walk)",
-        "Relaxing evening activity"
-      ]
-    },
-    {
-      id: 6, name: "Paneer Tikka Plate", type: "food", price: 150, rating: 4.4,
-      distance: 4, tags: ["Vegetarian", "North Indian", "Spicy"], dietary: "veg",
-      image: "🧀", canteen: "North Block Canteen",
-      reasons: [
-        "Fits within your ₹{budget} budget",
-        "Matches your vegetarian dietary preference",
-        "High rating (4.4 stars)",
-        "Very close to your location (4 min walk)",
-        "Chef's special today"
-      ]
-    },
-    {
-      id: 7, name: "Inter-College Sports Meet", type: "event", price: 0, rating: 4.6,
-      distance: 15, tags: ["Sports", "Competition", "Free"], dietary: "all",
-      image: "⚽", canteen: "Sports Complex",
-      reasons: [
-        "Free entry — fits any budget",
-        "Matches your interest in Sports events",
-        "Highly rated event (4.6 stars)",
-        "Annual flagship event",
-        "Participate or watch — your choice"
-      ]
-    }
-  ],
-  explore: {
-    id: 99, name: "Sushi Platter (New!)", type: "food", price: 250, rating: 4.9,
-    distance: 12, tags: ["Japanese", "New Arrival", "Premium"], dietary: "non-veg",
-    image: "🍣", canteen: "International Food Court",
-    reasons: [
-      "You usually choose Indian cuisine — try something different!",
-      "Highest rated new addition (4.9 stars)",
-      "Within your budget",
-      "Limited-time campus special",
-      "Students who tried it loved it"
-    ],
-    exploreMessage: "You usually choose similar items. Try this highly rated alternative within your budget."
-  }
-};
+(function () {
+  'use strict';
 
+  // ── DOM refs ──────────────────────────────────────────────────────
+  const detectBtn = document.getElementById('detectBtn');
+  const locationLabel = document.getElementById('locationLabel');
+  const locationCoords = document.getElementById('locationCoords');
+  const nearbyLoading = document.getElementById('nearbyLoading');
+  const nearbyError = document.getElementById('nearbyError');
+  const nearbyEmpty = document.getElementById('nearbyEmpty');
+  const nearbyGrid = document.getElementById('nearbyGrid');
+  const errorText = document.getElementById('errorText');
+  const retryBtn = document.getElementById('retryBtn');
+  const categoryFilters = document.getElementById('categoryFilters');
+  const resultsInfo = document.getElementById('resultsInfo');
+  const resultsCount = document.getElementById('resultsCount');
 
-// ---- Local API fallback ----
-const LocalAPI = {
-  filterLocal(prefs) {
-    const budget = prefs.budget || 500;
-    const dietary = prefs.dietary || 'all';
-    const wP = (prefs.weight_price || prefs.weightPrice || 50) / 100;
-    const wR = (prefs.weight_rating || prefs.weightRating || 70) / 100;
-    const wD = (prefs.weight_distance || prefs.weightDistance || 40) / 100;
+  let allResults = [];
+  let currentFilter = 'all';
+  let userLat = null;
+  let userLon = null;
+  let userAccuracy = null;
+  let locationResolved = false;
+  let watchId = null;
+  let bestCandidate = null;
+  const TARGET_ACCURACY_M = 120;
+  const MAX_ACCEPTABLE_ACCURACY_M = 1200;
 
-    let filtered = DummyData.recommendations.filter(item => {
-      if (item.price > budget) return false;
-      if (dietary !== 'all' && item.dietary !== 'all' && item.dietary !== dietary) return false;
-      return true;
-    });
+  // ── Helpers ───────────────────────────────────────────────────────
+  const show = el => { if (el) el.style.display = ''; };
+  const hide = el => { if (el) el.style.display = 'none'; };
 
-    filtered.sort((a, b) => {
-      const scoreA = (1 - a.price / 500) * wP + (a.rating / 5) * wR + (1 - a.distance / 20) * wD;
-      const scoreB = (1 - b.price / 500) * wP + (b.rating / 5) * wR + (1 - b.distance / 20) * wD;
-      return scoreB - scoreA;
-    });
-
-    filtered = filtered.slice(0, 5).map(item => ({
-      ...item,
-      score: Math.round(((1 - item.price / 500) * wP + (item.rating / 5) * wR + (1 - item.distance / 20) * wD) * 100),
-      reasons: item.reasons.map(r => r.replace('{budget}', budget))
-    }));
-
-    const explore = {
-      ...DummyData.explore,
-      score: 88,
-      reasons: DummyData.explore.reasons.map(r => r.replace('{budget}', budget))
-    };
-
-    return { recommendations: filtered, explore };
-  }
-};
-
-
-// ---- UI Module ----
-const UI = {
-  compareList: [],
-  _lastData: null,
-
-  renderCards(data) {
-    const grid = document.getElementById('resultsGrid');
-    grid.innerHTML = '';
-
-    data.recommendations.forEach(item => {
-      const card = document.createElement('div');
-      card.className = 'rec-card';
-      card.setAttribute('data-id', item.id);
-      card.innerHTML = `
-        <div class="rec-card-header">
-          <div class="rec-card-emoji">${item.image}</div>
-          <div>
-            <div class="rec-card-title">${item.name}</div>
-            <div class="rec-card-canteen">${item.canteen}</div>
-          </div>
-        </div>
-        <div class="rec-card-stats">
-          <span class="rec-stat"><span class="rec-stat-icon">💰</span> ₹${item.price}</span>
-          <span class="rec-stat"><span class="rec-stat-icon">⭐</span> ${item.rating}</span>
-          <span class="rec-stat"><span class="rec-stat-icon">📍</span> ${item.distance} min</span>
-          ${item.score ? `<span class="rec-stat"><span class="rec-stat-icon">📊</span> Score: ${item.score}%</span>` : ''}
-        </div>
-        <div class="rec-card-tags">
-          ${item.tags.map(t => `<span class="rec-tag">${t}</span>`).join('')}
-        </div>
-        <div class="rec-card-actions">
-          <button class="btn btn-sm btn-why" onclick="UI.toggleWhy(this)">Why This?</button>
-          <button class="btn btn-sm btn-compare" data-id="${item.id}" onclick="UI.toggleCompare(this, ${item.id})">Compare</button>
-          ${item.price > 0 ? `<button class="btn btn-sm btn-order" onclick="UI.orderItem(${JSON.stringify(item).replace(/"/g, '&quot;')})">🛒 Order</button>` : ''}
-        </div>
-        <div class="why-section">
-          <div class="why-title">Why we recommended this:</div>
-          <ul class="why-list">
-            ${item.reasons.map(r => `<li class="why-item">${r}</li>`).join('')}
-          </ul>
-        </div>
-      `;
-      grid.appendChild(card);
-    });
-  },
-
-  renderExplore(explore) {
-    if (!explore) return;
-    const container = document.getElementById('exploreCard');
-    container.innerHTML = `
-      <div class="explore-card">
-        <div class="rec-card-header">
-          <div class="rec-card-emoji">${explore.image}</div>
-          <div>
-            <div class="rec-card-title">${explore.name}</div>
-            <div class="rec-card-canteen">${explore.canteen}</div>
-          </div>
-        </div>
-        <div class="explore-message">${explore.exploreMessage || 'Try something different!'}</div>
-        <div class="rec-card-stats">
-          <span class="rec-stat"><span class="rec-stat-icon">💰</span> ₹${explore.price}</span>
-          <span class="rec-stat"><span class="rec-stat-icon">⭐</span> ${explore.rating}</span>
-          <span class="rec-stat"><span class="rec-stat-icon">📍</span> ${explore.distance} min</span>
-          ${explore.score ? `<span class="rec-stat"><span class="rec-stat-icon">📊</span> Score: ${explore.score}%</span>` : ''}
-        </div>
-        <div class="rec-card-tags">
-          ${explore.tags.map(t => `<span class="rec-tag">${t}</span>`).join('')}
-        </div>
-        <div class="rec-card-actions">
-          <button class="btn btn-sm btn-why" onclick="UI.toggleWhy(this)">Why This?</button>
-          ${explore.price > 0 ? `<button class="btn btn-sm btn-order" onclick="UI.orderItem(${JSON.stringify(explore).replace(/"/g, '&quot;')})">🛒 Order</button>` : ''}
-        </div>
-        <div class="why-section">
-          <div class="why-title">Why we recommended this:</div>
-          <ul class="why-list">
-            ${explore.reasons.map(r => `<li class="why-item">${r}</li>`).join('')}
-          </ul>
-        </div>
-      </div>
-    `;
-  },
-
-  toggleWhy(btn) {
-    const card = btn.closest('.rec-card, .explore-card');
-    const section = card.querySelector('.why-section');
-    const expanded = section.classList.contains('expanded');
-    section.classList.toggle('expanded');
-    btn.textContent = expanded ? 'Why This?' : 'Hide Reasons';
-  },
-
-  toggleCompare(btn, id) {
-    const idx = this.compareList.indexOf(id);
-    if (idx > -1) {
-      this.compareList.splice(idx, 1);
-      btn.classList.remove('active');
-      btn.textContent = 'Compare';
-    } else {
-      if (this.compareList.length >= 2) {
-        Toast.show('You can only compare 2 items at a time.', '⚠️');
-        return;
-      }
-      this.compareList.push(id);
-      btn.classList.add('active');
-      btn.textContent = 'Selected ✓';
-    }
-    if (this.compareList.length === 2) this.showComparison();
-  },
-
-  showComparison() {
-    const allItems = [...this._lastData.recommendations];
-    if (this._lastData.explore) allItems.push(this._lastData.explore);
-    const items = this.compareList.map(id => allItems.find(i => i.id === id)).filter(Boolean);
-    if (items.length < 2) { Toast.show('Could not find items.', '⚠️'); return; }
-
-    document.getElementById('compareBody').innerHTML = `
-      <div class="compare-grid">
-        ${items.map(item => `
-          <div class="compare-item">
-            <div class="compare-item-emoji">${item.image}</div>
-            <div class="compare-item-name">${item.name}</div>
-            <div class="compare-row">
-              <div class="compare-metric">
-                <div class="compare-metric-label">Price</div>
-                <div class="compare-metric-value">₹${item.price}</div>
-              </div>
-              <div class="compare-metric">
-                <div class="compare-metric-label">Rating</div>
-                <div class="compare-metric-value">⭐ ${item.rating} / 5</div>
-              </div>
-              <div class="compare-metric">
-                <div class="compare-metric-label">Distance</div>
-                <div class="compare-metric-value">📍 ${item.distance} min walk</div>
-              </div>
-              <div class="compare-metric">
-                <div class="compare-metric-label">Tags</div>
-                <div class="compare-tags">${item.tags.map(t => `<span class="rec-tag">${t}</span>`).join('')}</div>
-              </div>
-              <div class="compare-metric">
-                <div class="compare-metric-label">Score</div>
-                <div class="compare-score-bar"><div class="compare-score-fill" style="width:${item.score || 75}%;"></div></div>
-                <div class="compare-metric-value" style="margin-top:4px;">${item.score || 75}%</div>
-              </div>
-            </div>
-          </div>
-        `).join('')}
-      </div>
-    `;
-
-    document.getElementById('compareModal').classList.add('active');
-  },
-
-  closeComparison() {
-    document.getElementById('compareModal').classList.remove('active');
-    document.querySelectorAll('.btn-compare.active').forEach(btn => {
-      btn.classList.remove('active');
-      btn.textContent = 'Compare';
-    });
-    this.compareList = [];
-  },
-
-  // ---- Order item → redirect to payment page ----
-  orderItem(item) {
-    const orderData = {
-      items: [{
-        id: item.id,
-        name: item.name,
-        type: item.type,
-        price: item.price,
-        quantity: 1,
-        image: item.image,
-      }],
-      total: item.price,
-    };
-    sessionStorage.setItem('smartcampus-order', JSON.stringify(orderData));
-    window.location.href = 'payment.html';
-  },
-};
-
-
-// ---- Page Init ----
-document.addEventListener('DOMContentLoaded', async () => {
-  if (!Auth.guard()) return;
-  initShared();
-
-  // Modal close handlers
-  document.getElementById('modalClose').addEventListener('click', () => UI.closeComparison());
-  document.getElementById('compareModal').addEventListener('click', (e) => {
-    if (e.target === e.currentTarget) UI.closeComparison();
-  });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') UI.closeComparison(); });
-
-  // Load preferences from sessionStorage
-  const raw = sessionStorage.getItem('smartcampus-prefs');
-  const prefs = raw ? JSON.parse(raw) : {
-    budget: 250, dietary: 'all', location: 'any', available_time: 30,
-    interests: ['tech'], weight_price: 50, weight_rating: 70, weight_distance: 40
+  const CATEGORY_ICONS = {
+    food: '🍱',
+    restaurant: '🍽️',
+    cafe: '☕',
+    market: '🛒',
+    shop: '🛍️',
+    park: '🌳',
+    game_zone: '🎮',
+    leisure: '🏊',
+    tourism: '🗺️',
+    event: '🎉',
+    place: '📍',
+    other: '📌',
   };
 
-  // Show loading
-  Loader.show();
-  await new Promise(r => setTimeout(r, 800));
+  const SOURCE_COLORS = {
+    OSM: { bg: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: 'rgba(16, 185, 129, 0.3)' },
+    Foursquare: { bg: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', border: 'rgba(99, 102, 241, 0.3)' },
+    Eventbrite: { bg: 'rgba(249, 115, 22, 0.15)', color: '#fb923c', border: 'rgba(249, 115, 22, 0.3)' },
+    SmartCampus: { bg: 'rgba(14, 165, 233, 0.15)', color: '#38bdf8', border: 'rgba(14, 165, 233, 0.35)' },
+  };
 
-  // Try backend API first, fallback to local
-  let data;
-  try {
-    data = await SmartAPI.getRecommendations(prefs);
-  } catch {
-    data = LocalAPI.filterLocal(prefs);
+  // ── Category matching ─────────────────────────────────────────────
+  const CATEGORY_MAP = {
+    food: ['food'],
+    restaurant: ['restaurant', 'dining', 'food', 'fast_food', 'food_court'],
+    cafe: ['cafe', 'coffee', 'tea', 'bar', 'pub', 'bakery'],
+    market: ['market', 'shop', 'supermarket', 'grocery', 'marketplace', 'convenience'],
+    game_zone: ['game_zone', 'game', 'arcade', 'sport', 'sports', 'playground', 'leisure', 'entertainment', 'cinema', 'bowling'],
+    park: ['park', 'garden', 'nature', 'nature_reserve', 'recreation'],
+    event: ['event', 'festival', 'concert', 'meetup', 'workshop', 'conference'],
+  };
+
+  function matchesCategory(itemCategory, filterCat) {
+    if (filterCat === 'all') return true;
+    if (!itemCategory) return false;
+
+    const cat = itemCategory.toLowerCase().trim();
+    const validMatches = CATEGORY_MAP[filterCat];
+
+    if (!validMatches) return cat === filterCat;
+
+    for (const m of validMatches) {
+      if (cat === m || cat.includes(m) || m.includes(cat)) return true;
+    }
+    return false;
   }
 
-  Loader.hide();
-  UI._lastData = data;
-  UI.renderCards(data);
-  UI.renderExplore(data.explore);
-  Toast.show(`${data.recommendations.length} recommendations generated!`, '🎯');
-});
+  // ── Geolocation (Precise GPS-first) ───────────────────────────────
+  function requestLocation() {
+    if (!navigator.geolocation) {
+      showError('Geolocation is not supported by this browser.');
+      return;
+    }
+
+    locationResolved = false;
+    locationLabel.textContent = 'Detecting location…';
+    detectBtn.disabled = true;
+    detectBtn.innerHTML = '<div class="nearby-btn-spinner"></div><span>Detecting…</span>';
+
+    if (watchId !== null) {
+      navigator.geolocation.clearWatch(watchId);
+      watchId = null;
+    }
+
+    // Strategy 1: getCurrentPosition (high accuracy, no stale cache)
+    navigator.geolocation.getCurrentPosition(
+      function (pos) {
+        if (locationResolved) return;
+        if (pos.coords.accuracy && pos.coords.accuracy > TARGET_ACCURACY_M) {
+          // Ask watchPosition for a better fix.
+          startWatchPosition();
+          return;
+        }
+        onLocationFound(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy || null, 'GPS');
+      },
+      function (err) {
+        console.warn('[SmartCampus] getCurrentPosition failed:', err.message);
+        startWatchPosition();
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+  }
+
+  function startWatchPosition() {
+    watchId = navigator.geolocation.watchPosition(
+      function (pos) {
+        if (locationResolved) return;
+        var acc = pos.coords.accuracy || null;
+        // Save best candidate while waiting for strong GPS.
+        if (bestCandidate === null || (acc && acc < bestCandidate.accuracy)) {
+          bestCandidate = { lat: pos.coords.latitude, lon: pos.coords.longitude, accuracy: acc };
+        }
+        // Accept if strong enough, otherwise keep watching.
+        if (!acc || acc <= TARGET_ACCURACY_M) {
+          onLocationFound(pos.coords.latitude, pos.coords.longitude, acc, 'GPS');
+          if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+        } else {
+          locationLabel.textContent = 'Improving GPS accuracy…';
+          locationCoords.textContent = 'Current accuracy: ±' + Math.round(acc) + 'm';
+        }
+      },
+      function (err) {
+        console.warn('[SmartCampus] watchPosition failed:', err.message);
+        if (!locationResolved) {
+          detectBtn.disabled = false;
+          detectBtn.innerHTML =
+            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><circle cx="12" cy="12" r="3"/></svg>' +
+            '<span>Detect My Location</span>';
+          showError('Could not get precise GPS location. Enable location permission and high accuracy mode.');
+        }
+      },
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
+    );
+
+    setTimeout(function () {
+      if (!locationResolved) {
+        if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+        if (bestCandidate && (!bestCandidate.accuracy || bestCandidate.accuracy <= MAX_ACCEPTABLE_ACCURACY_M)) {
+          onLocationFound(bestCandidate.lat, bestCandidate.lon, bestCandidate.accuracy, 'Approx');
+          return;
+        }
+        detectBtn.disabled = false;
+        detectBtn.innerHTML =
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><circle cx="12" cy="12" r="3"/></svg>' +
+          '<span>Detect My Location</span>';
+        showError('Could not get current location. Use coordinates or retry.');
+      }
+    }, 22000);
+  }
+
+  function onLocationFound(lat, lon, accuracy, source) {
+    if (locationResolved) return;
+    locationResolved = true;
+    userLat = lat;
+    userLon = lon;
+    userAccuracy = accuracy;
+
+    var label = 'Precise location detected ✓';
+    if (source === 'Approx') label = 'Approximate location detected ✓';
+
+    locationLabel.textContent = label;
+    locationCoords.textContent = userLat.toFixed(5) + ', ' + userLon.toFixed(5) +
+      (userAccuracy ? (' (±' + Math.round(userAccuracy) + 'm)') : '');
+    detectBtn.disabled = false;
+    detectBtn.innerHTML =
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><circle cx="12" cy="12" r="3"/></svg>' +
+      '<span>Refresh Location</span>';
+
+    console.log('[SmartCampus] Location via ' + source + ': ' + lat.toFixed(4) + ', ' + lon.toFixed(4));
+    fetchRecommendations();
+  }
+
+  // ── Fetch recommendations ─────────────────────────────────────────
+  function fetchRecommendations() {
+    hide(nearbyError);
+    hide(nearbyEmpty);
+    hide(categoryFilters);
+    hide(resultsInfo);
+    nearbyGrid.innerHTML = '';
+    show(nearbyLoading);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(function () { controller.abort(); }, 35000);
+
+    fetch('/get-recommendations/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCsrfToken(),
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        latitude: userLat,
+        longitude: userLon,
+        accuracy_m: userAccuracy,
+        preferences: ['food', 'restaurant', 'cafe', 'park', 'event', 'market', 'game_zone'],
+      }),
+    })
+      .then(function (resp) {
+        if (!resp.ok) {
+          return resp.json().catch(function () { return {}; }).then(function (d) {
+            throw new Error(d.error || 'Server error (' + resp.status + ')');
+          });
+        }
+        return resp.json();
+      })
+      .then(function (data) {
+        clearTimeout(timeoutId);
+        hide(nearbyLoading);
+
+        console.log('[SmartCampus] API returned', data.length, 'items');
+
+        if (!Array.isArray(data) || data.length === 0) {
+          show(nearbyEmpty);
+          return;
+        }
+
+        allResults = data;
+        currentFilter = 'all';
+
+        var pills = document.querySelectorAll('.nearby-filter-pill');
+        pills.forEach(function (p) { p.classList.remove('active'); });
+        var allPill = document.querySelector('.nearby-filter-pill[data-cat="all"]');
+        if (allPill) allPill.classList.add('active');
+
+        show(categoryFilters);
+        renderCards(allResults);
+      })
+      .catch(function (e) {
+        clearTimeout(timeoutId);
+        hide(nearbyLoading);
+        if (e.name === 'AbortError') {
+          showError('Request timed out. Please try again.');
+          return;
+        }
+        showError(e.message || 'Failed to load recommendations.');
+      });
+  }
+
+  // ── Render cards ──────────────────────────────────────────────────
+  function renderCards(items) {
+    nearbyGrid.innerHTML = '';
+    hide(nearbyEmpty);
+
+    var filtered;
+    if (currentFilter === 'all') {
+      filtered = items;
+    } else {
+      filtered = [];
+      for (var i = 0; i < items.length; i++) {
+        if (matchesCategory(items[i].category, currentFilter)) {
+          filtered.push(items[i]);
+        }
+      }
+    }
+
+    if (filtered.length === 0) {
+      show(nearbyEmpty);
+      hide(resultsInfo);
+      return;
+    }
+
+    show(resultsInfo);
+    resultsCount.textContent = 'Showing ' + filtered.length + ' recommendation' + (filtered.length > 1 ? 's' : '');
+
+    for (var j = 0; j < filtered.length; j++) {
+      nearbyGrid.appendChild(createCard(filtered[j], j));
+    }
+  }
+
+  function createCard(item, index) {
+    var card = document.createElement('div');
+    card.className = 'nearby-card';
+    card.style.animationDelay = (index * 0.06) + 's';
+
+    var icon = CATEGORY_ICONS[item.category] || CATEGORY_ICONS.other;
+    var srcStyle = SOURCE_COLORS[item.source] || SOURCE_COLORS.OSM;
+    var rating = item.rating != null ? parseFloat(item.rating).toFixed(1) + ' ★' : 'N/A';
+    var dist = item.distance_km != null ? item.distance_km + ' km' : '—';
+    var scoreVal = item.score != null ? item.score : null;
+    var scoreDisplay = scoreVal != null ? scoreVal.toFixed(1) : '—';
+    var locationText = item.location || 'Location unavailable';
+    var hasCoords = item.latitude !== null && item.latitude !== undefined && item.longitude !== null && item.longitude !== undefined;
+    var mapLink = hasCoords ? ('https://www.google.com/maps?q=' + encodeURIComponent(item.latitude + ',' + item.longitude)) : '';
+    var catLabel = (item.category || 'other').replace(/_/g, ' ');
+    catLabel = catLabel.charAt(0).toUpperCase() + catLabel.slice(1);
+
+    var scoreClass = 'score-neutral';
+    if (scoreVal !== null) {
+      if (scoreVal > 3) scoreClass = 'score-high';
+      else if (scoreVal > 0) scoreClass = 'score-mid';
+      else scoreClass = 'score-low';
+    }
+
+    card.innerHTML =
+      '<div class="nearby-card-header">' +
+      '<span class="nearby-card-icon">' + icon + '</span>' +
+      '<span class="nearby-card-source" style="background:' + srcStyle.bg + ';color:' + srcStyle.color + ';border-color:' + srcStyle.border + '">' +
+      item.source +
+      '</span>' +
+      '</div>' +
+      '<h3 class="nearby-card-name">' + escapeHtml(item.name) + '</h3>' +
+      '<span class="nearby-card-category">' + catLabel + '</span>' +
+      '<div class="nearby-card-location">' +
+      '<span class="nearby-location-dot">📍</span>' +
+      '<span class="nearby-location-text">' + escapeHtml(locationText) + '</span>' +
+      (hasCoords ? ('<a class="nearby-map-link" href="' + mapLink + '" target="_blank" rel="noopener">Map</a>') : '') +
+      '</div>' +
+      '<div class="nearby-card-meta">' +
+      '<div class="nearby-meta-item"><span class="nearby-meta-label">Rating</span><span class="nearby-meta-value">' + rating + '</span></div>' +
+      '<div class="nearby-meta-item"><span class="nearby-meta-label">Distance</span><span class="nearby-meta-value">' + dist + '</span></div>' +
+      '<div class="nearby-meta-item"><span class="nearby-meta-label">Score</span><span class="nearby-meta-value ' + scoreClass + '">' + scoreDisplay + '</span></div>' +
+      '</div>' +
+      '<div class="nearby-card-why">' +
+      '<span class="nearby-why-label">Why Recommended</span>' +
+      '<p class="nearby-why-text">' + escapeHtml(item.why_recommended || '') + '</p>' +
+      '</div>';
+
+    return card;
+  }
+
+  // ── Category filters ──────────────────────────────────────────────
+  if (categoryFilters) {
+    categoryFilters.addEventListener('click', function (e) {
+      var pill = e.target.closest('.nearby-filter-pill');
+      if (!pill) return;
+
+      document.querySelectorAll('.nearby-filter-pill').forEach(function (p) { p.classList.remove('active'); });
+      pill.classList.add('active');
+      currentFilter = pill.dataset.cat;
+      if (allResults.length > 0) renderCards(allResults);
+    });
+  }
+
+  // ── Error helpers ─────────────────────────────────────────────────
+  function showError(msg) {
+    hide(nearbyLoading);
+    hide(nearbyEmpty);
+    errorText.textContent = msg;
+    show(nearbyError);
+  }
+
+  // ── Utilities ─────────────────────────────────────────────────────
+  function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function getCsrfToken() {
+    var name = 'csrftoken=';
+    var decoded = decodeURIComponent(document.cookie || '');
+    var parts = decoded.split(';');
+    for (var i = 0; i < parts.length; i++) {
+      var c = parts[i].trim();
+      if (c.indexOf(name) === 0) return c.substring(name.length, c.length);
+    }
+    return '';
+  }
+
+  // ── Event bindings ────────────────────────────────────────────────
+  detectBtn.addEventListener('click', function () {
+    locationResolved = false;
+    requestLocation();
+  });
+  retryBtn.addEventListener('click', function () {
+    if (userLat && userLon) fetchRecommendations();
+    else { locationResolved = false; requestLocation(); }
+  });
+
+  // ── Init ──────────────────────────────────────────────────────────
+  initShared();
+  requestLocation();
+
+})();
