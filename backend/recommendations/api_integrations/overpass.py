@@ -140,3 +140,4 @@ def fetch_nearby_places(lat: float, lon: float, radius: int = 2000) -> list[dict
 
     logger.info("Overpass returned %d named POIs near (%.4f, %.4f)", len(results), lat, lon)
     return results
+

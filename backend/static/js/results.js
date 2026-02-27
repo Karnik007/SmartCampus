@@ -348,6 +348,8 @@
       currentFilter = pill.dataset.cat;
       if (allResults.length > 0) renderCards(allResults);
     });
+  } else {
+    console.warn('[SmartCampus] categoryFilters element not found!');
   }
 
   // ── Error helpers ─────────────────────────────────────────────────
