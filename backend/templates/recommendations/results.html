@@ -12,7 +12,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
         rel="stylesheet" />
-    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20260226c" />
+    <<<<<<< HEAD <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20260226c" />
+    =======
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20260225b" />
+    >>>>>>> a7c1e1fce00d0eaddd357b60e8e9d3036d2703c0
 </head>
 
 <body>
@@ -57,8 +60,10 @@
                 </button>
             </div>
             <div class="nearby-manual-location">
-                <input type="number" step="any" id="manualLat" class="nearby-coord-input" placeholder="Latitude (e.g. 18.5204)" />
-                <input type="number" step="any" id="manualLon" class="nearby-coord-input" placeholder="Longitude (e.g. 73.8567)" />
+                <input type="number" step="any" id="manualLat" class="nearby-coord-input"
+                    placeholder="Latitude (e.g. 18.5204)" />
+                <input type="number" step="any" id="manualLon" class="nearby-coord-input"
+                    placeholder="Longitude (e.g. 73.8567)" />
                 <button type="button" class="btn btn-secondary btn-sm" id="useCoordsBtn">Use Coordinates</button>
             </div>
 
@@ -141,525 +146,534 @@
         </div>
     </footer>
 
-    <script src="{% static 'js/api.js' %}?v=20260226c"></script>
-    <script src="{% static 'js/auth.js' %}?v=20260226c"></script>
-    <script src="{% static 'js/shared.js' %}?v=20260226c"></script>
-    <script>
-        {% if user.is_authenticated %}
-        if (!localStorage.getItem('smartcampus-user')) {
-            localStorage.setItem('smartcampus-user', JSON.stringify({
-                name: "{{ user.first_name|default:user.email|escapejs }}",
-                email: "{{ user.email|escapejs }}",
-                id: {{ user.id }},
-        provider: "email"
+    <<<<<<< HEAD <script src="{% static 'js/api.js' %}?v=20260226c">
+        </script>
+        <script src="{% static 'js/auth.js' %}?v=20260226c"></script>
+        <script src="{% static 'js/shared.js' %}?v=20260226c"></script>
+        =======
+        <script src="{% static 'js/api.js' %}?v=20260225b"></script>
+        <script src="{% static 'js/auth.js' %}?v=20260225b"></script>
+        <script src="{% static 'js/shared.js' %}?v=20260225b"></script>
+        >>>>>>> a7c1e1fce00d0eaddd357b60e8e9d3036d2703c0
+        <script>
+            {% if user.is_authenticated %}
+            if (!localStorage.getItem('smartcampus-user')) {
+                localStorage.setItem('smartcampus-user', JSON.stringify({
+                    name: "{{ user.first_name|default:user.email|escapejs }}",
+                    email: "{{ user.email|escapejs }}",
+                    id: {{ user.id }},
+            provider: "email"
             }));
         }
-        {% else %}
-        localStorage.removeItem('smartcampus-user');
-        {% endif %}
-    </script>
+            {% else %}
+            localStorage.removeItem('smartcampus-user');
+            {% endif %}
+        </script>
 
-    <!-- ===== INLINE RESULTS JS – LOCATION & RECOMMENDATIONS ===== -->
-    <script>
-        (function () {
-            'use strict';
+        <<<<<<< HEAD <!--=====INLINE RESULTS JS – LOCATION & RECOMMENDATIONS=====-->
+            =======
+            <!-- ===== INLINE RESULTS JS – NO CACHE ISSUES ===== -->
+            >>>>>>> a7c1e1fce00d0eaddd357b60e8e9d3036d2703c0
+            <script>
+                (function () {
+                    'use strict';
 
-            /* ── DOM refs ─────────────────────────────── */
-            var detectBtn = document.getElementById('detectBtn');
-            var locationLabel = document.getElementById('locationLabel');
-            var locationCoords = document.getElementById('locationCoords');
-            var nearbyLoading = document.getElementById('nearbyLoading');
-            var nearbyError = document.getElementById('nearbyError');
-            var nearbyEmpty = document.getElementById('nearbyEmpty');
-            var nearbyGrid = document.getElementById('nearbyGrid');
-            var errorText = document.getElementById('errorText');
-            var retryBtn = document.getElementById('retryBtn');
-            var categoryFilters = document.getElementById('categoryFilters');
-            var nearbyToolbar = document.getElementById('nearbyToolbar');
-            var resultsInfo = document.getElementById('resultsInfo');
-            var resultsCount = document.getElementById('resultsCount');
-            var manualLat = document.getElementById('manualLat');
-            var manualLon = document.getElementById('manualLon');
-            var useCoordsBtn = document.getElementById('useCoordsBtn');
-            var sortBy = document.getElementById('sortBy');
-            var statTotal = document.getElementById('statTotal');
-            var statTopScore = document.getElementById('statTopScore');
-            var statAvgDistance = document.getElementById('statAvgDistance');
-            var loadMoreWrap = document.getElementById('loadMoreWrap');
-            var loadMoreBtn = document.getElementById('loadMoreBtn');
+                    /* ── DOM refs ─────────────────────────────── */
+                    var detectBtn = document.getElementById('detectBtn');
+                    var locationLabel = document.getElementById('locationLabel');
+                    var locationCoords = document.getElementById('locationCoords');
+                    var nearbyLoading = document.getElementById('nearbyLoading');
+                    var nearbyError = document.getElementById('nearbyError');
+                    var nearbyEmpty = document.getElementById('nearbyEmpty');
+                    var nearbyGrid = document.getElementById('nearbyGrid');
+                    var errorText = document.getElementById('errorText');
+                    var retryBtn = document.getElementById('retryBtn');
+                    var categoryFilters = document.getElementById('categoryFilters');
+                    var nearbyToolbar = document.getElementById('nearbyToolbar');
+                    var resultsInfo = document.getElementById('resultsInfo');
+                    var resultsCount = document.getElementById('resultsCount');
+                    var manualLat = document.getElementById('manualLat');
+                    var manualLon = document.getElementById('manualLon');
+                    var useCoordsBtn = document.getElementById('useCoordsBtn');
+                    var sortBy = document.getElementById('sortBy');
+                    var statTotal = document.getElementById('statTotal');
+                    var statTopScore = document.getElementById('statTopScore');
+                    var statAvgDistance = document.getElementById('statAvgDistance');
+                    var loadMoreWrap = document.getElementById('loadMoreWrap');
+                    var loadMoreBtn = document.getElementById('loadMoreBtn');
 
-            var allResults = [];
-            var currentFilter = 'all';
-            var currentSort = 'score_desc';
-            var filteredResults = [];
-            var renderedCount = 0;
-            var PAGE_SIZE = 12;
-            var userLat = null;
-            var userLon = null;
-            var userAccuracy = null;
-            var watchId = null;     // geolocation watchPosition ID
-            var locationResolved = false;  // true once we get a usable position
-            var bestCandidate = null;
-            var TARGET_ACCURACY_M = 120;
-            var MAX_ACCEPTABLE_ACCURACY_M = 1200;
+                    var allResults = [];
+                    var currentFilter = 'all';
+                    var currentSort = 'score_desc';
+                    var filteredResults = [];
+                    var renderedCount = 0;
+                    var PAGE_SIZE = 12;
+                    var userLat = null;
+                    var userLon = null;
+                    var userAccuracy = null;
+                    var watchId = null;     // geolocation watchPosition ID
+                    var locationResolved = false;  // true once we get a usable position
+                    var bestCandidate = null;
+                    var TARGET_ACCURACY_M = 120;
+                    var MAX_ACCEPTABLE_ACCURACY_M = 1200;
 
-            function showEl(el) { if (el) el.style.display = ''; }
-            function hideEl(el) { if (el) el.style.display = 'none'; }
+                    function showEl(el) { if (el) el.style.display = ''; }
+                    function hideEl(el) { if (el) el.style.display = 'none'; }
 
-            var CATEGORY_ICONS = {
-                food: '🍱', restaurant: '🍽️', cafe: '☕', market: '🛒', shop: '🛍️',
-                park: '🌳', game_zone: '🎮', leisure: '🏊', tourism: '🗺️',
-                event: '🎉', place: '📍', other: '📌'
-            };
+                    var CATEGORY_ICONS = {
+                        food: '🍱', restaurant: '🍽️', cafe: '☕', market: '🛒', shop: '🛍️',
+                        park: '🌳', game_zone: '🎮', leisure: '🏊', tourism: '🗺️',
+                        event: '🎉', place: '📍', other: '📌'
+                    };
 
-            var SOURCE_COLORS = {
-                OSM: { bg: 'rgba(16,185,129,0.15)', color: '#10b981', border: 'rgba(16,185,129,0.3)' },
-                Foursquare: { bg: 'rgba(99,102,241,0.15)', color: '#818cf8', border: 'rgba(99,102,241,0.3)' },
-                Eventbrite: { bg: 'rgba(249,115,22,0.15)', color: '#fb923c', border: 'rgba(249,115,22,0.3)' },
-                SmartCampus: { bg: 'rgba(14,165,233,0.15)', color: '#38bdf8', border: 'rgba(14,165,233,0.35)' }
-            };
+                    var SOURCE_COLORS = {
+                        OSM: { bg: 'rgba(16,185,129,0.15)', color: '#10b981', border: 'rgba(16,185,129,0.3)' },
+                        Foursquare: { bg: 'rgba(99,102,241,0.15)', color: '#818cf8', border: 'rgba(99,102,241,0.3)' },
+                        Eventbrite: { bg: 'rgba(249,115,22,0.15)', color: '#fb923c', border: 'rgba(249,115,22,0.3)' },
+                        SmartCampus: { bg: 'rgba(14,165,233,0.15)', color: '#38bdf8', border: 'rgba(14,165,233,0.35)' }
+                    };
 
-            /* ── Category matching ────────────────────── */
-            var CATEGORY_MAP = {
-                food: ['food'],
-                restaurant: ['restaurant'],
-                cafe: ['cafe'],
-                market: ['market', 'shop'],
-                game_zone: ['game_zone', 'leisure'],
-                park: ['park'],
-                event: ['event', 'tourism']
-            };
+                    /* ── Category matching ────────────────────── */
+                    var CATEGORY_MAP = {
+                        food: ['food'],
+                        restaurant: ['restaurant'],
+                        cafe: ['cafe'],
+                        market: ['market', 'shop'],
+                        game_zone: ['game_zone', 'leisure'],
+                        park: ['park'],
+                        event: ['event', 'tourism']
+                    };
 
-            function matchesFilter(itemCategory, filterKey) {
-                if (filterKey === 'all') return true;
-                if (!itemCategory) return false;
-                var cat = itemCategory.toLowerCase().trim();
-                var allowed = CATEGORY_MAP[filterKey];
-                if (!allowed) return false;
-                for (var i = 0; i < allowed.length; i++) {
-                    if (cat === allowed[i]) return true;
-                }
-                return false;
-            }
+                    function matchesFilter(itemCategory, filterKey) {
+                        if (filterKey === 'all') return true;
+                        if (!itemCategory) return false;
+                        var cat = itemCategory.toLowerCase().trim();
+                        var allowed = CATEGORY_MAP[filterKey];
+                        if (!allowed) return false;
+                        for (var i = 0; i < allowed.length; i++) {
+                            if (cat === allowed[i]) return true;
+                        }
+                        return false;
+                    }
 
-            /* ────────────────────────────────────────────
-               Geolocation – Precise GPS-first Approach
-               1. Try browser getCurrentPosition (high accuracy, no stale cache)
-               2. If accuracy is weak or fails, use watchPosition for better fix
-               3. No IP/default fallback for "current location" mode
-               ──────────────────────────────────────────── */
-            function requestLocation() {
-                if (!navigator.geolocation) {
-                    showError('Geolocation is not supported by this browser.');
-                    return;
-                }
-
-                locationResolved = false;
-                locationLabel.textContent = 'Detecting location…';
-                detectBtn.disabled = true;
-                detectBtn.querySelector('span').textContent = 'Detecting…';
-
-                // Stop any existing watch
-                if (watchId !== null) {
-                    navigator.geolocation.clearWatch(watchId);
-                    watchId = null;
-                }
-
-                // Strategy 1: getCurrentPosition (fast, precise, uncached)
-                navigator.geolocation.getCurrentPosition(
-                    function (pos) {
-                        if (locationResolved) return; // avoid duplicate
-                        if (pos.coords.accuracy && pos.coords.accuracy > TARGET_ACCURACY_M) {
-                            startWatchPosition();
+                    /* ────────────────────────────────────────────
+                       Geolocation – Precise GPS-first Approach
+                       1. Try browser getCurrentPosition (high accuracy, no stale cache)
+                       2. If accuracy is weak or fails, use watchPosition for better fix
+                       3. No IP/default fallback for "current location" mode
+                       ──────────────────────────────────────────── */
+                    function requestLocation() {
+                        if (!navigator.geolocation) {
+                            showError('Geolocation is not supported by this browser.');
                             return;
                         }
-                        onLocationFound(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy || null, 'GPS');
-                    },
-                    function (err) {
-                        console.warn('[SmartCampus] getCurrentPosition failed (code ' + err.code + '): ' + err.message);
-                        startWatchPosition();
-                    },
-                    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-                );
-            }
 
-            function startWatchPosition() {
-                watchId = navigator.geolocation.watchPosition(
-                    function (pos) {
-                        if (locationResolved) return;
-                        var acc = pos.coords.accuracy || null;
-                        if (bestCandidate === null || (acc && acc < bestCandidate.accuracy)) {
-                            bestCandidate = { lat: pos.coords.latitude, lon: pos.coords.longitude, accuracy: acc };
-                        }
-                        if (!acc || acc <= TARGET_ACCURACY_M) {
-                            onLocationFound(pos.coords.latitude, pos.coords.longitude, acc, 'GPS');
-                            if (watchId !== null) {
-                                navigator.geolocation.clearWatch(watchId);
-                                watchId = null;
-                            }
-                        } else {
-                            locationLabel.textContent = 'Improving GPS accuracy…';
-                            locationCoords.textContent = 'Current accuracy: ±' + Math.round(acc) + 'm';
-                        }
-                    },
-                    function (err2) {
-                        console.warn('[SmartCampus] watchPosition failed (code ' + err2.code + ')');
-                        if (!locationResolved) {
-                            detectBtn.disabled = false;
-                            detectBtn.querySelector('span').textContent = 'Detect My Location';
-                            showError('Could not get precise GPS location. Enable location permission and high accuracy mode.');
-                        }
-                    },
-                    { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
-                );
+                        locationResolved = false;
+                        locationLabel.textContent = 'Detecting location…';
+                        detectBtn.disabled = true;
+                        detectBtn.querySelector('span').textContent = 'Detecting…';
 
-                setTimeout(function () {
-                    if (!locationResolved) {
+                        // Stop any existing watch
                         if (watchId !== null) {
                             navigator.geolocation.clearWatch(watchId);
                             watchId = null;
                         }
-                        if (bestCandidate && (!bestCandidate.accuracy || bestCandidate.accuracy <= MAX_ACCEPTABLE_ACCURACY_M)) {
-                            onLocationFound(bestCandidate.lat, bestCandidate.lon, bestCandidate.accuracy, 'Approx');
+
+                        // Strategy 1: getCurrentPosition (fast, precise, uncached)
+                        navigator.geolocation.getCurrentPosition(
+                            function (pos) {
+                                if (locationResolved) return; // avoid duplicate
+                                if (pos.coords.accuracy && pos.coords.accuracy > TARGET_ACCURACY_M) {
+                                    startWatchPosition();
+                                    return;
+                                }
+                                onLocationFound(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy || null, 'GPS');
+                            },
+                            function (err) {
+                                console.warn('[SmartCampus] getCurrentPosition failed (code ' + err.code + '): ' + err.message);
+                                startWatchPosition();
+                            },
+                            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+                        );
+                    }
+
+                    function startWatchPosition() {
+                        watchId = navigator.geolocation.watchPosition(
+                            function (pos) {
+                                if (locationResolved) return;
+                                var acc = pos.coords.accuracy || null;
+                                if (bestCandidate === null || (acc && acc < bestCandidate.accuracy)) {
+                                    bestCandidate = { lat: pos.coords.latitude, lon: pos.coords.longitude, accuracy: acc };
+                                }
+                                if (!acc || acc <= TARGET_ACCURACY_M) {
+                                    onLocationFound(pos.coords.latitude, pos.coords.longitude, acc, 'GPS');
+                                    if (watchId !== null) {
+                                        navigator.geolocation.clearWatch(watchId);
+                                        watchId = null;
+                                    }
+                                } else {
+                                    locationLabel.textContent = 'Improving GPS accuracy…';
+                                    locationCoords.textContent = 'Current accuracy: ±' + Math.round(acc) + 'm';
+                                }
+                            },
+                            function (err2) {
+                                console.warn('[SmartCampus] watchPosition failed (code ' + err2.code + ')');
+                                if (!locationResolved) {
+                                    detectBtn.disabled = false;
+                                    detectBtn.querySelector('span').textContent = 'Detect My Location';
+                                    showError('Could not get precise GPS location. Enable location permission and high accuracy mode.');
+                                }
+                            },
+                            { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
+                        );
+
+                        setTimeout(function () {
+                            if (!locationResolved) {
+                                if (watchId !== null) {
+                                    navigator.geolocation.clearWatch(watchId);
+                                    watchId = null;
+                                }
+                                if (bestCandidate && (!bestCandidate.accuracy || bestCandidate.accuracy <= MAX_ACCEPTABLE_ACCURACY_M)) {
+                                    onLocationFound(bestCandidate.lat, bestCandidate.lon, bestCandidate.accuracy, 'Approx');
+                                    return;
+                                }
+                                detectBtn.disabled = false;
+                                detectBtn.querySelector('span').textContent = 'Detect My Location';
+                                showError('Could not get current location. Use coordinates or retry.');
+                            }
+                        }, 22000);
+                    }
+
+                    /**
+                     * Called when location is successfully determined (from any source).
+                     */
+                    function onLocationFound(lat, lon, accuracy, source) {
+                        if (locationResolved) return;
+                        locationResolved = true;
+
+                        userLat = lat;
+                        userLon = lon;
+                        userAccuracy = accuracy;
+
+                        var label = 'Precise location detected ✓';
+                        if (source === 'Approx') label = 'Approximate location detected ✓';
+
+                        locationLabel.textContent = label;
+                        locationCoords.textContent = userLat.toFixed(5) + ', ' + userLon.toFixed(5) +
+                            (userAccuracy ? (' (±' + Math.round(userAccuracy) + 'm)') : '');
+                        detectBtn.disabled = false;
+                        detectBtn.querySelector('span').textContent = 'Refresh Location';
+
+                        console.log('[SmartCampus] Location resolved via ' + source + ': ' + userLat.toFixed(4) + ', ' + userLon.toFixed(4));
+                        fetchRecommendations();
+                    }
+
+                    /* ── Fetch recommendations ────────────────── */
+                    function fetchRecommendations() {
+                        hideEl(nearbyError);
+                        hideEl(nearbyEmpty);
+                        hideEl(categoryFilters);
+                        hideEl(nearbyToolbar);
+                        hideEl(resultsInfo);
+                        hideEl(loadMoreWrap);
+                        nearbyGrid.innerHTML = '';
+                        showEl(nearbyLoading);
+
+                        var xhr = new XMLHttpRequest();
+                        xhr.open('POST', '/get-recommendations/', true);
+                        xhr.timeout = 35000;  // 35s to accommodate Overpass mirror retries
+                        xhr.setRequestHeader('Content-Type', 'application/json');
+                        xhr.setRequestHeader('X-CSRFToken', getCsrfToken());
+                        xhr.ontimeout = function () {
+                            hideEl(nearbyLoading);
+                            showError('Request timed out. Please try again.');
+                        };
+                        xhr.onreadystatechange = function () {
+                            if (xhr.readyState !== 4) return;
+
+                            hideEl(nearbyLoading);
+
+                            if (xhr.status !== 200) {
+                                showError('Server error (' + xhr.status + '). Please try again.');
+                                return;
+                            }
+
+                            var data;
+                            try { data = JSON.parse(xhr.responseText); }
+                            catch (e) { showError('Invalid response from server.'); return; }
+
+                            if (!data || !data.length) {
+                                showEl(nearbyEmpty);
+                                return;
+                            }
+
+                            allResults = data;
+                            currentFilter = 'all';
+
+                            /* Reset filter pills */
+                            var pills = document.querySelectorAll('.nearby-filter-pill');
+                            for (var i = 0; i < pills.length; i++) pills[i].classList.remove('active');
+                            var allPill = document.querySelector('[data-cat="all"]');
+                            if (allPill) allPill.classList.add('active');
+
+                            showEl(categoryFilters);
+                            showEl(nearbyToolbar);
+                            renderCards(true);
+                        };
+
+                        xhr.send(JSON.stringify({
+                            latitude: userLat,
+                            longitude: userLon,
+                            accuracy_m: userAccuracy,
+                            preferences: ['food', 'restaurant', 'cafe', 'park', 'event', 'market', 'game_zone']
+                        }));
+                    }
+
+                    function getCsrfToken() {
+                        var name = 'csrftoken=';
+                        var decodedCookie = decodeURIComponent(document.cookie || '');
+                        var parts = decodedCookie.split(';');
+                        for (var i = 0; i < parts.length; i++) {
+                            var c = parts[i].trim();
+                            if (c.indexOf(name) === 0) {
+                                return c.substring(name.length, c.length);
+                            }
+                        }
+                        return '';
+                    }
+
+                    /* ── Render cards ─────────────────────────── */
+                    function renderCards(reset) {
+                        if (reset) {
+                            nearbyGrid.innerHTML = '';
+                            renderedCount = 0;
+                            hideEl(loadMoreWrap);
+                        }
+                        hideEl(nearbyEmpty);
+
+                        var filtered = [];
+                        for (var i = 0; i < allResults.length; i++) {
+                            if (matchesFilter(allResults[i].category, currentFilter)) {
+                                filtered.push(allResults[i]);
+                            }
+                        }
+
+                        filtered = sortResults(filtered);
+                        filteredResults = filtered;
+
+                        if (filtered.length === 0) {
+                            showEl(nearbyEmpty);
+                            hideEl(resultsInfo);
+                            hideEl(loadMoreWrap);
                             return;
                         }
-                        detectBtn.disabled = false;
-                        detectBtn.querySelector('span').textContent = 'Detect My Location';
-                        showError('Could not get current location. Use coordinates or retry.');
-                    }
-                }, 22000);
-            }
 
-            /**
-             * Called when location is successfully determined (from any source).
-             */
-            function onLocationFound(lat, lon, accuracy, source) {
-                if (locationResolved) return;
-                locationResolved = true;
-
-                userLat = lat;
-                userLon = lon;
-                userAccuracy = accuracy;
-
-                var label = 'Precise location detected ✓';
-                if (source === 'Approx') label = 'Approximate location detected ✓';
-
-                locationLabel.textContent = label;
-                locationCoords.textContent = userLat.toFixed(5) + ', ' + userLon.toFixed(5) +
-                    (userAccuracy ? (' (±' + Math.round(userAccuracy) + 'm)') : '');
-                detectBtn.disabled = false;
-                detectBtn.querySelector('span').textContent = 'Refresh Location';
-
-                console.log('[SmartCampus] Location resolved via ' + source + ': ' + userLat.toFixed(4) + ', ' + userLon.toFixed(4));
-                fetchRecommendations();
-            }
-
-            /* ── Fetch recommendations ────────────────── */
-            function fetchRecommendations() {
-                hideEl(nearbyError);
-                hideEl(nearbyEmpty);
-                hideEl(categoryFilters);
-                hideEl(nearbyToolbar);
-                hideEl(resultsInfo);
-                hideEl(loadMoreWrap);
-                nearbyGrid.innerHTML = '';
-                showEl(nearbyLoading);
-
-                var xhr = new XMLHttpRequest();
-                xhr.open('POST', '/get-recommendations/', true);
-                xhr.timeout = 35000;  // 35s to accommodate Overpass mirror retries
-                xhr.setRequestHeader('Content-Type', 'application/json');
-                xhr.setRequestHeader('X-CSRFToken', getCsrfToken());
-                xhr.ontimeout = function () {
-                    hideEl(nearbyLoading);
-                    showError('Request timed out. Please try again.');
-                };
-                xhr.onreadystatechange = function () {
-                    if (xhr.readyState !== 4) return;
-
-                    hideEl(nearbyLoading);
-
-                    if (xhr.status !== 200) {
-                        showError('Server error (' + xhr.status + '). Please try again.');
-                        return;
+                        showEl(resultsInfo);
+                        renderNextBatch();
+                        updateStats(filtered);
                     }
 
-                    var data;
-                    try { data = JSON.parse(xhr.responseText); }
-                    catch (e) { showError('Invalid response from server.'); return; }
-
-                    if (!data || !data.length) {
-                        showEl(nearbyEmpty);
-                        return;
+                    function renderNextBatch() {
+                        var nextCount = Math.min(renderedCount + PAGE_SIZE, filteredResults.length);
+                        for (var j = renderedCount; j < nextCount; j++) {
+                            nearbyGrid.appendChild(buildCard(filteredResults[j], j));
+                        }
+                        renderedCount = nextCount;
+                        resultsCount.textContent = 'Showing ' + renderedCount + ' of ' + filteredResults.length + ' recommendations';
+                        if (renderedCount < filteredResults.length) {
+                            loadMoreBtn.textContent = 'Show More (' + (filteredResults.length - renderedCount) + ' left)';
+                            showEl(loadMoreWrap);
+                        } else {
+                            hideEl(loadMoreWrap);
+                        }
                     }
 
-                    allResults = data;
-                    currentFilter = 'all';
-
-                    /* Reset filter pills */
-                    var pills = document.querySelectorAll('.nearby-filter-pill');
-                    for (var i = 0; i < pills.length; i++) pills[i].classList.remove('active');
-                    var allPill = document.querySelector('[data-cat="all"]');
-                    if (allPill) allPill.classList.add('active');
-
-                    showEl(categoryFilters);
-                    showEl(nearbyToolbar);
-                    renderCards(true);
-                };
-
-                xhr.send(JSON.stringify({
-                    latitude: userLat,
-                    longitude: userLon,
-                    accuracy_m: userAccuracy,
-                    preferences: ['food', 'restaurant', 'cafe', 'park', 'event', 'market', 'game_zone']
-                }));
-            }
-
-            function getCsrfToken() {
-                var name = 'csrftoken=';
-                var decodedCookie = decodeURIComponent(document.cookie || '');
-                var parts = decodedCookie.split(';');
-                for (var i = 0; i < parts.length; i++) {
-                    var c = parts[i].trim();
-                    if (c.indexOf(name) === 0) {
-                        return c.substring(name.length, c.length);
-                    }
-                }
-                return '';
-            }
-
-            /* ── Render cards ─────────────────────────── */
-            function renderCards(reset) {
-                if (reset) {
-                    nearbyGrid.innerHTML = '';
-                    renderedCount = 0;
-                    hideEl(loadMoreWrap);
-                }
-                hideEl(nearbyEmpty);
-
-                var filtered = [];
-                for (var i = 0; i < allResults.length; i++) {
-                    if (matchesFilter(allResults[i].category, currentFilter)) {
-                        filtered.push(allResults[i]);
-                    }
-                }
-
-                filtered = sortResults(filtered);
-                filteredResults = filtered;
-
-                if (filtered.length === 0) {
-                    showEl(nearbyEmpty);
-                    hideEl(resultsInfo);
-                    hideEl(loadMoreWrap);
-                    return;
-                }
-
-                showEl(resultsInfo);
-                renderNextBatch();
-                updateStats(filtered);
-            }
-
-            function renderNextBatch() {
-                var nextCount = Math.min(renderedCount + PAGE_SIZE, filteredResults.length);
-                for (var j = renderedCount; j < nextCount; j++) {
-                    nearbyGrid.appendChild(buildCard(filteredResults[j], j));
-                }
-                renderedCount = nextCount;
-                resultsCount.textContent = 'Showing ' + renderedCount + ' of ' + filteredResults.length + ' recommendations';
-                if (renderedCount < filteredResults.length) {
-                    loadMoreBtn.textContent = 'Show More (' + (filteredResults.length - renderedCount) + ' left)';
-                    showEl(loadMoreWrap);
-                } else {
-                    hideEl(loadMoreWrap);
-                }
-            }
-
-            function sortResults(items) {
-                var arr = items.slice();
-                if (currentSort === 'distance_asc') {
-                    arr.sort(function (a, b) { return (a.distance_km || 9999) - (b.distance_km || 9999); });
-                } else if (currentSort === 'rating_desc') {
-                    arr.sort(function (a, b) { return (b.rating || 0) - (a.rating || 0); });
-                } else if (currentSort === 'name_asc') {
-                    arr.sort(function (a, b) { return (a.name || '').localeCompare(b.name || ''); });
-                } else {
-                    arr.sort(function (a, b) { return (b.score || 0) - (a.score || 0); });
-                }
-                return arr;
-            }
-
-            function updateStats(items) {
-                var total = items.length;
-                var topScore = 0;
-                var distanceSum = 0;
-                var distanceCount = 0;
-
-                for (var i = 0; i < items.length; i++) {
-                    var s = parseFloat(items[i].score || 0);
-                    if (s > topScore) topScore = s;
-                    if (items[i].distance_km !== null && items[i].distance_km !== undefined) {
-                        distanceSum += parseFloat(items[i].distance_km) || 0;
-                        distanceCount += 1;
-                    }
-                }
-
-                var avgDistance = distanceCount ? (distanceSum / distanceCount) : 0;
-                animateNumber(statTotal, total, 0);
-                animateNumber(statTopScore, topScore, 1);
-                animateNumber(statAvgDistance, avgDistance, 1, ' km');
-            }
-
-            function animateNumber(el, target, decimals, suffix) {
-                var start = 0;
-                var duration = 420;
-                var startTime = null;
-                var fixed = typeof decimals === 'number' ? decimals : 0;
-                var endVal = Number(target) || 0;
-                var tail = suffix || '';
-
-                function tick(ts) {
-                    if (!startTime) startTime = ts;
-                    var progress = Math.min((ts - startTime) / duration, 1);
-                    var current = start + (endVal - start) * progress;
-                    el.textContent = current.toFixed(fixed) + tail;
-                    if (progress < 1) requestAnimationFrame(tick);
-                }
-                requestAnimationFrame(tick);
-            }
-
-            function buildCard(item, idx) {
-                var card = document.createElement('div');
-                card.className = 'nearby-card';
-                card.style.animationDelay = (idx * 0.06) + 's';
-
-                var icon = CATEGORY_ICONS[item.category] || '📌';
-                var src = SOURCE_COLORS[item.source] || SOURCE_COLORS.OSM;
-
-                var rating = (item.rating != null) ? parseFloat(item.rating).toFixed(1) + ' ★' : 'N/A';
-                var dist = (item.distance_km != null) ? item.distance_km + ' km' : '—';
-                var scr = (item.score != null) ? item.score.toFixed(1) + '/10' : '—';
-                var scorePct = item.score != null ? Math.max(0, Math.min(100, (parseFloat(item.score) / 10) * 100)) : 0;
-                var locationText = item.location || 'Location unavailable';
-                var hasCoords = item.latitude !== null && item.latitude !== undefined && item.longitude !== null && item.longitude !== undefined;
-                var mapLink = hasCoords
-                    ? 'https://www.google.com/maps?q=' + encodeURIComponent(item.latitude + ',' + item.longitude)
-                    : '';
-
-                var catLabel = (item.category || 'other').replace(/_/g, ' ');
-                catLabel = catLabel.charAt(0).toUpperCase() + catLabel.slice(1);
-
-                var scoreClass = 'score-neutral';
-                if (item.score != null) {
-                    if (item.score >= 6) scoreClass = 'score-high';
-                    else if (item.score >= 3) scoreClass = 'score-mid';
-                    else scoreClass = 'score-low';
-                }
-
-                card.innerHTML =
-                    '<div class="nearby-card-header">' +
-                    '<span class="nearby-card-icon">' + icon + '</span>' +
-                    '<div class="nearby-card-badges">' +
-                    (idx === 0 ? '<span class="nearby-card-rank">Top Pick</span>' : '') +
-                    '<span class="nearby-card-source" style="background:' + src.bg + ';color:' + src.color + ';border-color:' + src.border + '">' + (item.source || 'OSM') + '</span>' +
-                    '</div>' +
-                    '</div>' +
-                    '<h3 class="nearby-card-name">' + esc(item.name) + '</h3>' +
-                    '<span class="nearby-card-category">' + catLabel + '</span>' +
-                    '<div class="nearby-card-location">' +
-                    '<span class="nearby-location-dot">📍</span>' +
-                    '<span class="nearby-location-text">' + esc(locationText) + '</span>' +
-                    (hasCoords ? '<a class="nearby-map-link" href="' + mapLink + '" target="_blank" rel="noopener">Map</a>' : '') +
-                    '</div>' +
-                    '<div class="nearby-card-meta">' +
-                    '<div class="nearby-meta-item"><span class="nearby-meta-label">Rating</span><span class="nearby-meta-value">' + rating + '</span></div>' +
-                    '<div class="nearby-meta-item"><span class="nearby-meta-label">Distance</span><span class="nearby-meta-value">' + dist + '</span></div>' +
-                    '<div class="nearby-meta-item"><span class="nearby-meta-label">Score</span><span class="nearby-meta-value ' + scoreClass + '">' + scr + '</span></div>' +
-                    '</div>' +
-                    '<div class="nearby-score-track"><span class="nearby-score-fill" style="width:' + scorePct.toFixed(1) + '%"></span></div>' +
-                    '<div class="nearby-card-why">' +
-                    '<span class="nearby-why-label">Why Recommended</span>' +
-                    '<p class="nearby-why-text">' + esc(item.why_recommended || '') + '</p>' +
-                    '</div>';
-
-                return card;
-            }
-
-            /* ── Filter click handling ────────────────── */
-            var filterBtns = document.querySelectorAll('.nearby-filter-pill');
-            for (var f = 0; f < filterBtns.length; f++) {
-                filterBtns[f].addEventListener('click', function () {
-                    for (var k = 0; k < filterBtns.length; k++) filterBtns[k].classList.remove('active');
-                    this.classList.add('active');
-                    currentFilter = this.getAttribute('data-cat');
-                    renderCards(true);
-                });
-            }
-
-            if (sortBy) {
-                sortBy.addEventListener('change', function () {
-                    currentSort = this.value || 'score_desc';
-                    renderCards(true);
-                });
-            }
-            if (loadMoreBtn) {
-                loadMoreBtn.addEventListener('click', function () {
-                    renderNextBatch();
-                });
-            }
-
-            /* ── Helpers ──────────────────────────────── */
-            function showError(msg) {
-                hideEl(nearbyLoading);
-                hideEl(nearbyEmpty);
-                hideEl(nearbyToolbar);
-                hideEl(loadMoreWrap);
-                errorText.textContent = msg;
-                showEl(nearbyError);
-            }
-
-            function esc(s) {
-                var d = document.createElement('div');
-                d.textContent = s || '';
-                return d.innerHTML;
-            }
-
-            /* ── Event bindings ───────────────────────── */
-            detectBtn.addEventListener('click', function () {
-                locationResolved = false;  // allow re-detection
-                requestLocation();
-            });
-            if (useCoordsBtn) {
-                useCoordsBtn.addEventListener('click', function () {
-                    var lat = parseFloat((manualLat && manualLat.value) || '');
-                    var lon = parseFloat((manualLon && manualLon.value) || '');
-
-                    if (isNaN(lat) || isNaN(lon)) {
-                        showError('Please enter valid latitude and longitude.');
-                        return;
-                    }
-                    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
-                        showError('Coordinates out of range. Latitude: -90 to 90, Longitude: -180 to 180.');
-                        return;
+                    function sortResults(items) {
+                        var arr = items.slice();
+                        if (currentSort === 'distance_asc') {
+                            arr.sort(function (a, b) { return (a.distance_km || 9999) - (b.distance_km || 9999); });
+                        } else if (currentSort === 'rating_desc') {
+                            arr.sort(function (a, b) { return (b.rating || 0) - (a.rating || 0); });
+                        } else if (currentSort === 'name_asc') {
+                            arr.sort(function (a, b) { return (a.name || '').localeCompare(b.name || ''); });
+                        } else {
+                            arr.sort(function (a, b) { return (b.score || 0) - (a.score || 0); });
+                        }
+                        return arr;
                     }
 
-                    hideEl(nearbyError);
-                    locationResolved = false;
-                    onLocationFound(lat, lon, null, 'Manual');
-                });
-            }
-            retryBtn.addEventListener('click', function () {
-                if (userLat && userLon) fetchRecommendations();
-                else {
-                    locationResolved = false;
+                    function updateStats(items) {
+                        var total = items.length;
+                        var topScore = 0;
+                        var distanceSum = 0;
+                        var distanceCount = 0;
+
+                        for (var i = 0; i < items.length; i++) {
+                            var s = parseFloat(items[i].score || 0);
+                            if (s > topScore) topScore = s;
+                            if (items[i].distance_km !== null && items[i].distance_km !== undefined) {
+                                distanceSum += parseFloat(items[i].distance_km) || 0;
+                                distanceCount += 1;
+                            }
+                        }
+
+                        var avgDistance = distanceCount ? (distanceSum / distanceCount) : 0;
+                        animateNumber(statTotal, total, 0);
+                        animateNumber(statTopScore, topScore, 1);
+                        animateNumber(statAvgDistance, avgDistance, 1, ' km');
+                    }
+
+                    function animateNumber(el, target, decimals, suffix) {
+                        var start = 0;
+                        var duration = 420;
+                        var startTime = null;
+                        var fixed = typeof decimals === 'number' ? decimals : 0;
+                        var endVal = Number(target) || 0;
+                        var tail = suffix || '';
+
+                        function tick(ts) {
+                            if (!startTime) startTime = ts;
+                            var progress = Math.min((ts - startTime) / duration, 1);
+                            var current = start + (endVal - start) * progress;
+                            el.textContent = current.toFixed(fixed) + tail;
+                            if (progress < 1) requestAnimationFrame(tick);
+                        }
+                        requestAnimationFrame(tick);
+                    }
+
+                    function buildCard(item, idx) {
+                        var card = document.createElement('div');
+                        card.className = 'nearby-card';
+                        card.style.animationDelay = (idx * 0.06) + 's';
+
+                        var icon = CATEGORY_ICONS[item.category] || '📌';
+                        var src = SOURCE_COLORS[item.source] || SOURCE_COLORS.OSM;
+
+                        var rating = (item.rating != null) ? parseFloat(item.rating).toFixed(1) + ' ★' : 'N/A';
+                        var dist = (item.distance_km != null) ? item.distance_km + ' km' : '—';
+                        var scr = (item.score != null) ? item.score.toFixed(1) + '/10' : '—';
+                        var scorePct = item.score != null ? Math.max(0, Math.min(100, (parseFloat(item.score) / 10) * 100)) : 0;
+                        var locationText = item.location || 'Location unavailable';
+                        var hasCoords = item.latitude !== null && item.latitude !== undefined && item.longitude !== null && item.longitude !== undefined;
+                        var mapLink = hasCoords
+                            ? 'https://www.google.com/maps?q=' + encodeURIComponent(item.latitude + ',' + item.longitude)
+                            : '';
+
+                        var catLabel = (item.category || 'other').replace(/_/g, ' ');
+                        catLabel = catLabel.charAt(0).toUpperCase() + catLabel.slice(1);
+
+                        var scoreClass = 'score-neutral';
+                        if (item.score != null) {
+                            if (item.score >= 6) scoreClass = 'score-high';
+                            else if (item.score >= 3) scoreClass = 'score-mid';
+                            else scoreClass = 'score-low';
+                        }
+
+                        card.innerHTML =
+                            '<div class="nearby-card-header">' +
+                            '<span class="nearby-card-icon">' + icon + '</span>' +
+                            '<div class="nearby-card-badges">' +
+                            (idx === 0 ? '<span class="nearby-card-rank">Top Pick</span>' : '') +
+                            '<span class="nearby-card-source" style="background:' + src.bg + ';color:' + src.color + ';border-color:' + src.border + '">' + (item.source || 'OSM') + '</span>' +
+                            '</div>' +
+                            '</div>' +
+                            '<h3 class="nearby-card-name">' + esc(item.name) + '</h3>' +
+                            '<span class="nearby-card-category">' + catLabel + '</span>' +
+                            '<div class="nearby-card-location">' +
+                            '<span class="nearby-location-dot">📍</span>' +
+                            '<span class="nearby-location-text">' + esc(locationText) + '</span>' +
+                            (hasCoords ? '<a class="nearby-map-link" href="' + mapLink + '" target="_blank" rel="noopener">Map</a>' : '') +
+                            '</div>' +
+                            '<div class="nearby-card-meta">' +
+                            '<div class="nearby-meta-item"><span class="nearby-meta-label">Rating</span><span class="nearby-meta-value">' + rating + '</span></div>' +
+                            '<div class="nearby-meta-item"><span class="nearby-meta-label">Distance</span><span class="nearby-meta-value">' + dist + '</span></div>' +
+                            '<div class="nearby-meta-item"><span class="nearby-meta-label">Score</span><span class="nearby-meta-value ' + scoreClass + '">' + scr + '</span></div>' +
+                            '</div>' +
+                            '<div class="nearby-score-track"><span class="nearby-score-fill" style="width:' + scorePct.toFixed(1) + '%"></span></div>' +
+                            '<div class="nearby-card-why">' +
+                            '<span class="nearby-why-label">Why Recommended</span>' +
+                            '<p class="nearby-why-text">' + esc(item.why_recommended || '') + '</p>' +
+                            '</div>';
+
+                        return card;
+                    }
+
+                    /* ── Filter click handling ────────────────── */
+                    var filterBtns = document.querySelectorAll('.nearby-filter-pill');
+                    for (var f = 0; f < filterBtns.length; f++) {
+                        filterBtns[f].addEventListener('click', function () {
+                            for (var k = 0; k < filterBtns.length; k++) filterBtns[k].classList.remove('active');
+                            this.classList.add('active');
+                            currentFilter = this.getAttribute('data-cat');
+                            renderCards(true);
+                        });
+                    }
+
+                    if (sortBy) {
+                        sortBy.addEventListener('change', function () {
+                            currentSort = this.value || 'score_desc';
+                            renderCards(true);
+                        });
+                    }
+                    if (loadMoreBtn) {
+                        loadMoreBtn.addEventListener('click', function () {
+                            renderNextBatch();
+                        });
+                    }
+
+                    /* ── Helpers ──────────────────────────────── */
+                    function showError(msg) {
+                        hideEl(nearbyLoading);
+                        hideEl(nearbyEmpty);
+                        hideEl(nearbyToolbar);
+                        hideEl(loadMoreWrap);
+                        errorText.textContent = msg;
+                        showEl(nearbyError);
+                    }
+
+                    function esc(s) {
+                        var d = document.createElement('div');
+                        d.textContent = s || '';
+                        return d.innerHTML;
+                    }
+
+                    /* ── Event bindings ───────────────────────── */
+                    detectBtn.addEventListener('click', function () {
+                        locationResolved = false;  // allow re-detection
+                        requestLocation();
+                    });
+                    if (useCoordsBtn) {
+                        useCoordsBtn.addEventListener('click', function () {
+                            var lat = parseFloat((manualLat && manualLat.value) || '');
+                            var lon = parseFloat((manualLon && manualLon.value) || '');
+
+                            if (isNaN(lat) || isNaN(lon)) {
+                                showError('Please enter valid latitude and longitude.');
+                                return;
+                            }
+                            if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+                                showError('Coordinates out of range. Latitude: -90 to 90, Longitude: -180 to 180.');
+                                return;
+                            }
+
+                            hideEl(nearbyError);
+                            locationResolved = false;
+                            onLocationFound(lat, lon, null, 'Manual');
+                        });
+                    }
+                    retryBtn.addEventListener('click', function () {
+                        if (userLat && userLon) fetchRecommendations();
+                        else {
+                            locationResolved = false;
+                            requestLocation();
+                        }
+                    });
+
+                    /* ── Init ─────────────────────────────────── */
+                    initShared();
                     requestLocation();
-                }
-            });
-
-            /* ── Init ─────────────────────────────────── */
-            initShared();
-            requestLocation();
-        })();
-    </script>
+                })();
+            </script>
 
 </body>
 
