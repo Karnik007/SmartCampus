@@ -113,8 +113,37 @@ class Event(models.Model):
         return f"{self.name} (₹{self.price})"
 
 
+class SavedPlace(models.Model):
+    """Places/items saved by the user for later reference."""
+
+    ITEM_TYPE_CHOICES = [
+        ('food', 'Food'),
+        ('event', 'Event'),
+    ]
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='saved_places')
+    item_type = models.CharField(max_length=10, choices=ITEM_TYPE_CHOICES)
+    item_id = models.IntegerField()
+    item_name = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'saved_places'
+        ordering = ['-created_at']
+        unique_together = ('user', 'item_type', 'item_id')
+
+    def __str__(self):
+        return f"{self.user.email} saved {self.item_name}"
+
+
 class UserPreference(models.Model):
     """Snapshot of user preferences for a specific recommendation request."""
+
+    BUDGET_LEVEL_CHOICES = [
+        ('low', 'Low (≤ ₹100)'),
+        ('medium', 'Medium (₹101 - ₹300)'),
+        ('high', 'High (> ₹300)'),
+    ]
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='preferences')
     budget = models.IntegerField(default=250)
@@ -125,6 +154,12 @@ class UserPreference(models.Model):
     weight_price = models.IntegerField(default=50)
     weight_rating = models.IntegerField(default=70)
     weight_distance = models.IntegerField(default=40)
+    
+    # New personalization fields
+    preferred_categories = models.JSONField(default=list, help_text='List of preferred category tags')
+    budget_level = models.CharField(max_length=10, choices=BUDGET_LEVEL_CHOICES, default='medium')
+    preferred_distance = models.IntegerField(default=15, help_text='Preferred max walking distance in minutes')
+    
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

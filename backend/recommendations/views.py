@@ -67,6 +67,43 @@ class CompareView(APIView):
         return Response({'items': items_data})
 
 
+class SavePlaceView(APIView):
+    """POST /api/save-place/ – Toggle save/unsave for a food or event item."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        item_id = request.data.get('item_id')
+        item_type = request.data.get('item_type')
+        item_name = request.data.get('item_name', 'Unknown Item')
+
+        if not item_id or item_type not in ['food', 'event']:
+            return Response(
+                {'error': 'Valid item_id and item_type (food/event) are required.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        from .models import SavedPlace
+        
+        # Toggle functionality
+        saved_place = SavedPlace.objects.filter(
+            user=request.user, 
+            item_id=item_id, 
+            item_type=item_type
+        ).first()
+
+        if saved_place:
+            saved_place.delete()
+            return Response({'status': 'unsaved', 'message': f'{item_name} removed from saved places.'})
+        else:
+            SavedPlace.objects.create(
+                user=request.user,
+                item_id=item_id,
+                item_type=item_type,
+                item_name=item_name
+            )
+            return Response({'status': 'saved', 'message': f'{item_name} saved successfully!'})
+
+
 class TrustScoreView(APIView):
     """GET /api/trust/ – Get transparency/trust score breakdown."""
     permission_classes = [IsAuthenticated]
@@ -111,6 +148,24 @@ from django.contrib.auth.decorators import login_required
 def dashboard_view(request):
     """GET /dashboard/ – Preferences form page."""
     return render(request, 'recommendations/dashboard.html')
+
+
+@login_required
+def saved_places_view(request):
+    """GET /dashboard/saved-places/ – View saved places."""
+    return render(request, 'recommendations/saved_places.html')
+
+
+@login_required
+def preferences_view(request):
+    """GET /dashboard/preferences/ – User preferences page."""
+    return render(request, 'recommendations/preferences.html')
+
+
+@login_required
+def recommendation_history_view(request):
+    """GET /dashboard/history/ – Recommendation history page."""
+    return render(request, 'recommendations/recommendation_history.html')
 
 
 @login_required

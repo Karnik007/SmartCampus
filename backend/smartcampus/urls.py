@@ -21,7 +21,6 @@ urlpatterns = [
     path('', homepage, name='home'),
     path('', include('accounts.urls_web')),
     path('', include('recommendations.urls_web')),
-    path('', include('payments.urls_web')),
 
     # ---- Allauth (social OAuth) routes ----
     path('accounts/', include('allauth.urls')),
@@ -29,7 +28,6 @@ urlpatterns = [
     # ---- API routes (existing) ----
     path('api/auth/', include('accounts.urls')),
     path('api/', include('recommendations.urls')),
-    path('api/payment/', include('payments.urls')),
 ]
 
 # Serve media files in development

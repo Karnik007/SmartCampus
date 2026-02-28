@@ -10,13 +10,15 @@ from .models import FoodItem, Event, RecommendationLog
 logger = logging.getLogger(__name__)
 
 
-def score_item(item, preferences):
+def score_item(item, preferences, user=None):
     """
     Calculate a weighted score for a food/event item.
 
     Score = (1 - price/max_budget) * wPrice
           + (rating/5.0) * wRating
           + (1 - distance/max_distance) * wDistance
+          + (preference_match_bonus)
+          + (saved_place_bonus)
 
     Returns a score between 0 and 100.
     """
@@ -38,7 +40,32 @@ def score_item(item, preferences):
     raw_score = price_score + rating_score + distance_score
     max_possible = w_price + w_rating + w_distance
 
-    return round((raw_score / max_possible) * 100) if max_possible > 0 else 50
+    # Transform to 0-100 base score
+    base_score = round((raw_score / max_possible) * 100) if max_possible > 0 else 50
+    
+    # --- Personalization Bonuses ---
+    bonus = 0
+    item_tags = [t.name.lower() for t in item.tags.all()]
+    
+    # 1. Category Preference Match
+    preferred_categories = preferences.get('preferred_categories', [])
+    if any(tag in preferred_categories for tag in item_tags):
+        bonus += 15  # 15 point bump for matching favorite category
+
+    # 2. Saved Places Similarity Match
+    if user and user.is_authenticated:
+        # Check if they have saved items with overlapping tags
+        # (For performance, you'd usually pass this in pre-calculated, but doing here for simplicity)
+        from .models import SavedPlace
+        saved_items = SavedPlace.objects.filter(user=user)
+        # If user has saved this exact item, boost it heavily
+        if saved_items.filter(item_id=item.id).exists():
+            bonus += 25
+        elif saved_items.exists():
+            bonus += 5 # slight boost just for participating in personalization
+            
+    return min(100, base_score + bonus)
+
 
 
 def generate_reasons(item, preferences, item_type='food'):
@@ -123,7 +150,7 @@ def get_recommendations(user, preferences):
     results = []
 
     for item in food_qs:
-        s = score_item(item, preferences)
+        s = score_item(item, preferences, user)
         reasons = generate_reasons(item, preferences, 'food')
         results.append({
             'id': item.id,
@@ -141,7 +168,7 @@ def get_recommendations(user, preferences):
         })
 
     for item in event_qs:
-        s = score_item(item, preferences)
+        s = score_item(item, preferences, user)
         reasons = generate_reasons(item, preferences, 'event')
         results.append({
             'id': item.id,
@@ -222,7 +249,7 @@ def get_explore_item(user, preferences):
         'tags': [t.name for t in explore.tags.all()],
         'image': explore.image,
         'canteen': explore.canteen.name,
-        'score': score_item(explore, preferences),
+        'score': score_item(explore, preferences, user),
         'reasons': reasons,
         'exploreMessage': "You usually choose similar items. Try this highly rated alternative within your budget.",
     }

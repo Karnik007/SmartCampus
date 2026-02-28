@@ -158,21 +158,11 @@ const SmartAPI = {
         return this.get('/trust/');
     },
 
-    // ---- Payments ----
-
-    async createOrder(items, notes = '') {
-        return this.post('/payment/create-order/', { items, notes });
-    },
-
-    async verifyPayment(paymentData) {
-        return this.post('/payment/verify/', paymentData);
-    },
-
-    async getPaymentHistory() {
-        return this.get('/payment/history/');
-    },
-
-    async getOrderHistory() {
-        return this.get('/payment/orders/');
-    },
+    async toggleSavePlace(itemId, itemType, itemName) {
+        return this.post('/save-place/', {
+            item_id: itemId,
+            item_type: itemType,
+            item_name: itemName
+        });
+    }
 };

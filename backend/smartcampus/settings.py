@@ -43,10 +43,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.facebook',
     # Local apps
     'recommendations',
-    'payments',
     'smartcampus',
-    
-    
 ]
 
 MIDDLEWARE = [

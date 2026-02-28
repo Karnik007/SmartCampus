@@ -27,8 +27,8 @@ const Navbar = {
           <li><a href="/" ${currentPage === '/' ? 'class="active"' : ''}>Home</a></li>
           <li><a href="/dashboard/" ${currentPage === '/dashboard/' ? 'class="active"' : ''}>Dashboard</a></li>
           <li><a href="/results/" ${currentPage === '/results/' ? 'class="active"' : ''}>Results</a></li>
+          <li><a href="/dashboard/saved-places/" ${currentPage === '/dashboard/saved-places/' ? 'class="active"' : ''}>Saved Places</a></li>
           <li><a href="/trust/" ${currentPage === '/trust/' ? 'class="active"' : ''}>Trust</a></li>
-          <li><a href="/payment/" ${currentPage === '/payment/' ? 'class="active"' : ''}>Payment</a></li>
         </ul>
         <div class="nav-actions">
           <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark/light mode">
@@ -46,6 +46,13 @@ const Navbar = {
                   <span class="nav-dropdown-name">${user.name}</span>
                   <span class="nav-dropdown-email">${user.email}</span>
                 </div>
+                <div class="nav-dropdown-divider"></div>
+                <a href="/dashboard/preferences/" class="nav-dropdown-item" style="text-decoration: none; color: inherit;">
+                  <span>⚙️ Preferences</span>
+                </a>
+                <a href="/dashboard/history/" class="nav-dropdown-item" style="text-decoration: none; color: inherit;">
+                  <span>📜 History</span>
+                </a>
                 <div class="nav-dropdown-divider"></div>
                 <button class="nav-dropdown-item" id="logoutBtn">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
