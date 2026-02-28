@@ -14,21 +14,21 @@ const Navbar = {
    */
   init() {
     const user = Auth.getUser();
-    const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+    const currentPage = window.location.pathname;
 
     const navHTML = `
     <nav class="navbar" id="navbar">
       <div class="nav-container">
-        <a href="index.html" class="nav-logo">
+        <a href="/" class="nav-logo">
           <span class="logo-icon">🎓</span>
           <span class="logo-text">SmartCampus<span class="logo-accent">AI</span></span>
         </a>
         <ul class="nav-links" id="navLinks">
-          <li><a href="index.html" ${currentPage === 'index.html' ? 'class="active"' : ''}>Home</a></li>
-          <li><a href="dashboard.html" ${currentPage === 'dashboard.html' ? 'class="active"' : ''}>Dashboard</a></li>
-          <li><a href="results.html" ${currentPage === 'results.html' ? 'class="active"' : ''}>Results</a></li>
-          <li><a href="trust.html" ${currentPage === 'trust.html' ? 'class="active"' : ''}>Trust</a></li>
-          <li><a href="payment.html" ${currentPage === 'payment.html' ? 'class="active"' : ''}>Payment</a></li>
+          <li><a href="/" ${currentPage === '/' ? 'class="active"' : ''}>Home</a></li>
+          <li><a href="/dashboard/" ${currentPage === '/dashboard/' ? 'class="active"' : ''}>Dashboard</a></li>
+          <li><a href="/results/" ${currentPage === '/results/' ? 'class="active"' : ''}>Results</a></li>
+          <li><a href="/trust/" ${currentPage === '/trust/' ? 'class="active"' : ''}>Trust</a></li>
+          <li><a href="/payment/" ${currentPage === '/payment/' ? 'class="active"' : ''}>Payment</a></li>
         </ul>
         <div class="nav-actions">
           <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark/light mode">
@@ -54,7 +54,7 @@ const Navbar = {
               </div>
             </div>
           ` : `
-            <a href="login.html" class="btn btn-primary btn-sm nav-login-btn">Login</a>
+            <a href="/login/" class="btn btn-primary btn-sm nav-login-btn">Login</a>
           `}
           <button class="hamburger" id="hamburger" aria-label="Toggle menu">
             <span></span><span></span><span></span>

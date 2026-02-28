@@ -54,10 +54,20 @@ class SocialLoginSerializer(serializers.Serializer):
     """Social login – provider + token/email."""
 
     provider = serializers.ChoiceField(choices=['google', 'facebook', 'github'])
-    email = serializers.EmailField()
-    name = serializers.CharField(required=False, default='')
-    provider_id = serializers.CharField(required=False, default='')
-    avatar_url = serializers.URLField(required=False, allow_blank=True, default='')
+    access_token = serializers.CharField(required=False, allow_blank=False)
+    id_token = serializers.CharField(required=False, allow_blank=False)
+
+    def validate(self, attrs):
+        provider = attrs.get('provider')
+        access_token = attrs.get('access_token')
+        id_token = attrs.get('id_token')
+
+        if provider == 'google' and not (id_token or access_token):
+            raise serializers.ValidationError('Google login requires id_token or access_token.')
+        if provider in ('facebook', 'github') and not access_token:
+            raise serializers.ValidationError(f'{provider.title()} login requires access_token.')
+
+        return attrs
 
 
 class UserSerializer(serializers.ModelSerializer):

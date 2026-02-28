@@ -123,7 +123,7 @@ class SavedPlace(models.Model):
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='saved_places')
     item_type = models.CharField(max_length=10, choices=ITEM_TYPE_CHOICES)
-    item_id = models.IntegerField()
+    item_id = models.BigIntegerField()
     item_name = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -182,7 +182,7 @@ class RecommendationLog(models.Model):
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='recommendation_logs')
     item_type = models.CharField(max_length=10, choices=[('food', 'Food'), ('event', 'Event')])
-    item_id = models.IntegerField()
+    item_id = models.BigIntegerField()
     item_name = models.CharField(max_length=255)
     score = models.FloatField(default=0)
     action = models.CharField(max_length=10, choices=ACTION_CHOICES, default='shown')

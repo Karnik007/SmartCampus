@@ -8,6 +8,10 @@ from rest_framework import status, generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import SessionAuthentication
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.core.cache import cache
 
 from .models import FoodItem, Event, UserPreference
 from .serializers import (
@@ -20,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 class RecommendView(APIView):
     """POST /api/recommend/ – Get personalized recommendations."""
+    authentication_classes = [SessionAuthentication, JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -54,6 +59,7 @@ class RecommendView(APIView):
 
 class CompareView(APIView):
     """POST /api/recommend/compare/ – Compare two items."""
+    authentication_classes = [SessionAuthentication, JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -68,8 +74,21 @@ class CompareView(APIView):
 
 
 class SavePlaceView(APIView):
-    """POST /api/save-place/ – Toggle save/unsave for a food or event item."""
+    """GET/POST /api/save-place/ – List or toggle save/unsave for items."""
+    authentication_classes = [SessionAuthentication, JWTAuthentication]
     permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from .models import SavedPlace
+        places = list(
+            SavedPlace.objects.filter(user=request.user)
+            .order_by('-created_at')
+            .values('item_type', 'item_id', 'item_name', 'created_at')
+        )
+        for p in places:
+            if p.get('created_at'):
+                p['created_at'] = p['created_at'].isoformat()
+        return Response({'saved_places': places})
 
     def post(self, request):
         item_id = request.data.get('item_id')
@@ -106,6 +125,7 @@ class SavePlaceView(APIView):
 
 class TrustScoreView(APIView):
     """GET /api/trust/ – Get transparency/trust score breakdown."""
+    authentication_classes = [SessionAuthentication, JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -159,16 +179,44 @@ def saved_places_view(request):
 @login_required
 def preferences_view(request):
     """GET /dashboard/preferences/ – User preferences page."""
-    return render(request, 'recommendations/preferences.html')
+    import json
+    prefs = list(
+        UserPreference.objects.filter(user=request.user)
+        .order_by('-created_at')[:20]
+        .values('budget', 'dietary', 'location', 'available_time',
+                'interests', 'weight_price', 'weight_rating',
+                'weight_distance', 'created_at')
+    )
+    # Convert datetimes to ISO strings for JSON
+    for p in prefs:
+        if p.get('created_at'):
+            p['created_at'] = p['created_at'].isoformat()
+    return render(request, 'recommendations/preferences.html', {
+        'preferences_json': json.dumps(prefs),
+    })
 
 
 @login_required
 def recommendation_history_view(request):
     """GET /dashboard/history/ – Recommendation history page."""
-    return render(request, 'recommendations/recommendation_history.html')
+    import json
+    from .models import RecommendationLog
+    logs = list(
+        RecommendationLog.objects.filter(user=request.user)
+        .order_by('-created_at')[:50]
+        .values('item_type', 'item_id', 'item_name', 'score',
+                'action', 'is_explore', 'reasons', 'created_at')
+    )
+    for log in logs:
+        if log.get('created_at'):
+            log['created_at'] = log['created_at'].isoformat()
+    return render(request, 'recommendations/recommendation_history.html', {
+        'logs_json': json.dumps(logs),
+    })
 
 
 @login_required
+@ensure_csrf_cookie
 def results_view(request):
     """GET /results/ – Recommendation results page."""
     return render(request, 'recommendations/results.html')
@@ -185,7 +233,6 @@ def trust_view(request):
 # ============================================
 import json
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from recommendations.services.recommendation_service import get_nearby_recommendations
 
@@ -197,7 +244,21 @@ def nearby_view(request):
     return redirect('results')
 
 
-@csrf_exempt
+def _too_many_requests(request) -> bool:
+    """Simple per-minute limiter for nearby recommendation calls."""
+    user_key = str(request.user.id) if request.user.is_authenticated else request.META.get('REMOTE_ADDR', 'anon')
+    cache_key = f"nearby_rate:{user_key}"
+    count = cache.get(cache_key)
+    if count is None:
+        cache.set(cache_key, 1, timeout=60)
+        return False
+    if count >= 30:
+        return True
+    cache.incr(cache_key)
+    return False
+
+
+@login_required
 @require_POST
 def nearby_recommendations_api(request):
     """
@@ -229,9 +290,22 @@ def nearby_recommendations_api(request):
     preferences = body.get("preferences", [])
     if not isinstance(preferences, list):
         preferences = []
+    accuracy_m = body.get("accuracy_m")
+    try:
+        accuracy_m = float(accuracy_m) if accuracy_m is not None else None
+    except (TypeError, ValueError):
+        accuracy_m = None
+
+    if _too_many_requests(request):
+        return JsonResponse({"error": "Rate limit exceeded. Please retry in a minute."}, status=429)
 
     try:
-        results = get_nearby_recommendations(lat, lon, preferences or None)
+        results = get_nearby_recommendations(
+            lat,
+            lon,
+            preferences or None,
+            accuracy_m=accuracy_m,
+        )
     except Exception as exc:
         logger.error("Recommendation engine error: %s", exc)
         return JsonResponse({"error": "Failed to fetch recommendations. Please try again."}, status=500)

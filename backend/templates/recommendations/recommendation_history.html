@@ -1,0 +1,318 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Recommendation History – SmartCampus AI</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
+    <meta name="description" content="View your recommendation history and interactions." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20260226c" />
+    <style>
+        .history-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.25rem;
+            margin-top: 1.5rem;
+        }
+
+        .history-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+            animation: fadeInUp 0.4s ease both;
+        }
+
+        .history-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--border-color-hover);
+        }
+
+        .history-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+
+        .history-card-type {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .history-card-type.food {
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+        }
+
+        .history-card-type.event {
+            background: rgba(249, 115, 22, 0.15);
+            color: #fb923c;
+        }
+
+        .history-card-score {
+            font-weight: 800;
+            font-size: 1rem;
+        }
+
+        .score-high {
+            color: #10b981;
+        }
+
+        .score-mid {
+            color: #f59e0b;
+        }
+
+        .score-low {
+            color: #ef4444;
+        }
+
+        .history-card-name {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .history-card-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 0.5rem;
+        }
+
+        .action-shown {
+            background: rgba(148, 163, 184, 0.15);
+            color: #94a3b8;
+        }
+
+        .action-clicked {
+            background: rgba(99, 102, 241, 0.15);
+            color: #818cf8;
+        }
+
+        .action-ordered {
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+        }
+
+        .action-dismissed {
+            background: rgba(239, 68, 68, 0.12);
+            color: #f87171;
+        }
+
+        .history-card-reasons {
+            margin-top: 0.5rem;
+        }
+
+        .history-reason-chip {
+            display: inline-block;
+            background: rgba(99, 102, 241, 0.1);
+            color: #a5b4fc;
+            padding: 0.2rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.72rem;
+            font-weight: 500;
+            margin: 0.15rem 0.2rem 0.15rem 0;
+        }
+
+        .history-card-date {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-top: 0.6rem;
+        }
+
+        .history-card-explore {
+            background: rgba(251, 191, 36, 0.15);
+            color: #fbbf24;
+            font-size: 0.68rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 8px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        .empty-state-icon {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state-text {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <section class="page-section" id="historySection">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge">Activity</span>
+                <h2 class="section-title">Recommendation <span class="gradient-text">History</span></h2>
+                <p class="section-subtitle">All the recommendations you've received, and how you interacted with them.
+                </p>
+            </div>
+
+            <div id="historyContent">
+                <div class="empty-state" id="loadingState">
+                    <div class="nearby-spinner"></div>
+                    <p class="empty-state-text" style="margin-top:1rem;">Loading history…</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <p>Built with ❤️ for Hackathon 2026 · <strong>SmartCampus AI</strong> — Transparent Recommender System</p>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/api.js' %}?v=20260226c"></script>
+    <script src="{% static 'js/auth.js' %}?v=20260226c"></script>
+    <script src="{% static 'js/gooey-nav.js' %}?v=20260226c"></script>
+    <script src="{% static 'js/shared.js' %}?v=20260226c"></script>
+    <!-- User Data for JS -->
+    {% if user.is_authenticated %}
+    <script type="application/json" id="user-data">
+        {"name": "{{ user.first_name|default:user.email|escapejs }}", "email": "{{ user.email|escapejs }}", "id": {{ user.id }}, "provider": "email"}
+    </script>
+    {% endif %}
+
+    <script>
+        // Parse user data safely to avoid IDE lint errors
+        var userDataEl = document.getElementById('user-data');
+        if (userDataEl) {
+            if (!localStorage.getItem('smartcampus-user')) {
+                try {
+                    var data = JSON.parse(userDataEl.textContent);
+                    localStorage.setItem('smartcampus-user', JSON.stringify(data));
+                } catch(e) {}
+            }
+        } else {
+            localStorage.removeItem('smartcampus-user');
+        }
+    </script>
+    <script>
+        (function () {
+            'use strict';
+            initShared();
+
+            var container = document.getElementById('historyContent');
+
+            /* Fetch history from the Django context */
+            var logs = {{ logs_json| safe |default: "[]"
+        }};
+
+        var ACTION_ICONS = {
+            shown: '👁️', clicked: '👆', ordered: '✅', dismissed: '❌'
+        };
+
+        function renderHistory(items) {
+            if (!items || items.length === 0) {
+                container.innerHTML =
+                    '<div class="empty-state">' +
+                    '<div class="empty-state-icon">📜</div>' +
+                    '<p class="empty-state-title">No recommendation history yet</p>' +
+                    '<p class="empty-state-text">Get recommendations from the Dashboard or Results page to build your history.</p>' +
+                    '<a href="/results/" class="btn btn-primary" style="margin-top:1.25rem;display:inline-block;text-decoration:none;">Browse Recommendations</a>' +
+                    '</div>';
+                return;
+            }
+
+            var html = '<div class="history-grid">';
+            for (var i = 0; i < items.length; i++) {
+                var item = items[i];
+                var icon = item.item_type === 'food' ? '🍱' : '🎉';
+                var scoreClass = 'score-mid';
+                if (item.score >= 6) scoreClass = 'score-high';
+                else if (item.score < 3) scoreClass = 'score-low';
+                var dateStr = item.created_at ? new Date(item.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+                var actionIcon = ACTION_ICONS[item.action] || '👁️';
+                var reasons = item.reasons || [];
+
+                html +=
+                    '<div class="history-card" style="animation-delay:' + (i * 0.05) + 's">' +
+                    '<div class="history-card-header">' +
+                    '<span class="history-card-type ' + esc(item.item_type) + '">' + icon + ' ' + esc(item.item_type) + '</span>' +
+                    '<div style="display:flex;align-items:center;gap:0.5rem;">' +
+                    (item.is_explore ? '<span class="history-card-explore">🔍 Explore</span>' : '') +
+                    '<span class="history-card-score ' + scoreClass + '">' + (item.score != null ? item.score.toFixed(1) : '—') + '/10</span>' +
+                    '</div>' +
+                    '</div>' +
+                    '<h3 class="history-card-name">' + esc(item.item_name) + '</h3>' +
+                    '<span class="history-card-action action-' + esc(item.action) + '">' + actionIcon + ' ' + esc(item.action) + '</span>';
+
+                if (reasons.length) {
+                    html += '<div class="history-card-reasons">';
+                    for (var j = 0; j < reasons.length; j++) {
+                        html += '<span class="history-reason-chip">' + esc(reasons[j]) + '</span>';
+                    }
+                    html += '</div>';
+                }
+
+                html += '<div class="history-card-date">📅 ' + esc(dateStr) + '</div></div>';
+            }
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function esc(s) {
+            var d = document.createElement('div');
+            d.textContent = s || '';
+            return d.innerHTML;
+        }
+
+        renderHistory(logs);
+        }) ();
+    </script>
+
+</body>
+
+</html>

@@ -1,7 +1,7 @@
 /* ===================================================
    SmartCampus AI – Authentication Module (v2)
    Uses centralized SmartAPI client for JWT-based auth.
-   Falls back to localStorage simulation if backend is down.
+   No local fallbacks — all auth goes through Django.
    =================================================== */
 
 const Auth = {
@@ -25,11 +25,13 @@ const Auth = {
     },
 
     // ---- Route Guard ----
+    // NOTE: For template-served pages Django's @login_required handles this.
+    // This JS guard is kept only for client-side UI (navbar display etc.)
 
     guard() {
         if (!this.isLoggedIn()) {
             sessionStorage.setItem('smartcampus-redirect', window.location.href);
-            window.location.href = 'login.html';
+            window.location.href = '/login/';
             return false;
         }
         return true;
@@ -38,10 +40,10 @@ const Auth = {
     _redirectAfterLogin() {
         const redirect = sessionStorage.getItem('smartcampus-redirect');
         sessionStorage.removeItem('smartcampus-redirect');
-        window.location.href = redirect || 'dashboard.html';
+        window.location.href = redirect || '/dashboard/';
     },
 
-    // ---- Email/Password Auth ----
+    // ---- Email/Password Auth (API-based, used by social login buttons) ----
 
     async login(email, password) {
         if (!email || !password) {
@@ -63,31 +65,12 @@ const Auth = {
             this._saveUser(user);
             return { success: true };
         } catch (err) {
-            // Fallback to localStorage simulation
-            if (err.status) {
-                const msg = err.detail || err.non_field_errors?.[0] || 'Login failed.';
-                return { success: false, error: msg };
-            }
-            return this._localLogin(email, password);
+            const msg = err.detail || err.non_field_errors?.[0] || 'Login failed. Please check your credentials.';
+            return { success: false, error: msg };
         }
     },
 
-    _localLogin(email, password) {
-        const users = JSON.parse(localStorage.getItem('smartcampus-users') || '[]');
-        const existing = users.find(u => u.email === email);
-
-        if (existing) {
-            if (existing.password !== password) {
-                return { success: false, error: 'Incorrect password.' };
-            }
-            const user = { name: existing.name, email: existing.email, avatar: null, provider: 'email' };
-            this._saveUser(user);
-            return { success: true };
-        }
-        return { success: false, error: 'No account found with this email. Please sign up.' };
-    },
-
-    // ---- Signup ----
+    // ---- Signup (API-based) ----
 
     async signup(name, email, password, confirmPassword) {
         if (!name || !email || !password || !confirmPassword) {
@@ -115,24 +98,9 @@ const Auth = {
             this._saveUser(user);
             return { success: true };
         } catch (err) {
-            if (err.status) {
-                const msg = err.detail || err.email?.[0] || err.non_field_errors?.[0] || 'Signup failed.';
-                return { success: false, error: msg };
-            }
-            return this._localSignup(name, email, password);
+            const msg = err.detail || err.email?.[0] || err.non_field_errors?.[0] || 'Signup failed.';
+            return { success: false, error: msg };
         }
-    },
-
-    _localSignup(name, email, password) {
-        const users = JSON.parse(localStorage.getItem('smartcampus-users') || '[]');
-        if (users.find(u => u.email === email)) {
-            return { success: false, error: 'An account with this email already exists.' };
-        }
-        users.push({ name, email, password });
-        localStorage.setItem('smartcampus-users', JSON.stringify(users));
-        const user = { name, email, avatar: null, provider: 'email' };
-        this._saveUser(user);
-        return { success: true };
     },
 
     // ---- Social Login ----
@@ -160,16 +128,9 @@ const Auth = {
             };
             this._saveUser(user);
             return { success: true };
-        } catch {
-            // Fallback
-            const user = {
-                name: `${providerNames[provider]} User`,
-                email: providerEmails[provider],
-                avatar: null,
-                provider,
-            };
-            this._saveUser(user);
-            return { success: true };
+        } catch (err) {
+            const msg = err.detail || `${providerNames[provider]} login failed. Please try again.`;
+            return { success: false, error: msg };
         }
     },
 
@@ -181,6 +142,7 @@ const Auth = {
         } catch { /* ignore */ }
         SmartAPI.clearTokens();
         localStorage.removeItem(this.STORAGE_KEY);
-        window.location.href = 'index.html';
+        // Redirect to Django's server-side logout to clear the session
+        window.location.href = '/logout/';
     },
 };

@@ -208,5 +208,5 @@ const Loader = {
 function initShared() {
   Navbar.init();
   Theme.init();
-  GooeyNav.init();
+  if (typeof GooeyNav !== 'undefined') GooeyNav.init();
 }

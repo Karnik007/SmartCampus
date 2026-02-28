@@ -6,12 +6,47 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Recommendations – SmartCampus AI</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
     <meta name="description" content="Discover restaurants, cafes, parks, events and more near you." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
         rel="stylesheet" />
-    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20260225b" />
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20260226c" />
+    <style>
+        .nearby-card-save {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.25);
+            color: #818cf8;
+            border-radius: 8px;
+            padding: 0.4rem 0.75rem;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            margin-top: 0.75rem;
+        }
+
+        .nearby-card-save:hover {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: rgba(99, 102, 241, 0.45);
+            transform: translateY(-1px);
+        }
+
+        .nearby-card-save.saved {
+            background: rgba(16, 185, 129, 0.15);
+            border-color: rgba(16, 185, 129, 0.3);
+            color: #10b981;
+        }
+
+        .nearby-card-save.saving {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+    </style>
 </head>
 
 <body>
@@ -55,16 +90,50 @@
                     <span>Detect My Location</span>
                 </button>
             </div>
+            <div class="nearby-manual-location">
+                <input type="number" step="any" id="manualLat" class="nearby-coord-input"
+                    placeholder="Latitude (e.g. 18.5204)" />
+                <input type="number" step="any" id="manualLon" class="nearby-coord-input"
+                    placeholder="Longitude (e.g. 73.8567)" />
+                <button type="button" class="btn btn-secondary btn-sm" id="useCoordsBtn">Use Coordinates</button>
+            </div>
 
             <!-- Category filter pills -->
             <div class="nearby-filters" id="categoryFilters" style="display:none;">
                 <button class="nearby-filter-pill active" data-cat="all">🌐 All</button>
+                <button class="nearby-filter-pill" data-cat="food">🍱 Food</button>
                 <button class="nearby-filter-pill" data-cat="restaurant">🍽️ Restaurants</button>
                 <button class="nearby-filter-pill" data-cat="cafe">☕ Cafes</button>
                 <button class="nearby-filter-pill" data-cat="market">🛒 Markets</button>
                 <button class="nearby-filter-pill" data-cat="game_zone">🎮 Game Zones</button>
                 <button class="nearby-filter-pill" data-cat="park">🌳 Parks</button>
                 <button class="nearby-filter-pill" data-cat="event">🎉 Events</button>
+            </div>
+
+            <div class="nearby-toolbar" id="nearbyToolbar" style="display:none;">
+                <div class="nearby-stats">
+                    <div class="nearby-stat-chip">
+                        <span class="nearby-stat-label">Total</span>
+                        <span class="nearby-stat-value" id="statTotal">0</span>
+                    </div>
+                    <div class="nearby-stat-chip">
+                        <span class="nearby-stat-label">Top Score</span>
+                        <span class="nearby-stat-value" id="statTopScore">0.0</span>
+                    </div>
+                    <div class="nearby-stat-chip">
+                        <span class="nearby-stat-label">Avg Distance</span>
+                        <span class="nearby-stat-value" id="statAvgDistance">0.0 km</span>
+                    </div>
+                </div>
+                <div class="nearby-sort">
+                    <label for="sortBy" class="nearby-sort-label">Sort</label>
+                    <select id="sortBy" class="nearby-sort-select">
+                        <option value="score_desc">Best Match</option>
+                        <option value="distance_asc">Nearest First</option>
+                        <option value="rating_desc">Highest Rated</option>
+                        <option value="name_asc">A to Z</option>
+                    </select>
+                </div>
             </div>
 
             <!-- Loading state -->
@@ -95,6 +164,9 @@
 
             <!-- Results grid -->
             <div class="nearby-cards-grid" id="nearbyGrid"></div>
+            <div class="nearby-load-more-wrap" id="loadMoreWrap" style="display:none;">
+                <button class="btn btn-secondary btn-sm" id="loadMoreBtn">Show More</button>
+            </div>
 
         </div>
     </section>
@@ -105,26 +177,33 @@
         </div>
     </footer>
 
-    <script src="{% static 'js/api.js' %}?v=20260225b"></script>
-    <script src="{% static 'js/auth.js' %}?v=20260225b"></script>
-    <script src="{% static 'js/gooey-nav.js' %}"></script>
-    <script src="{% static 'js/shared.js' %}?v=20260225b"></script>
+    <script src="{% static 'js/api.js' %}?v=20260226c"></script>
+    <script src="{% static 'js/auth.js' %}?v=20260226c"></script>
+    <script src="{% static 'js/gooey-nav.js' %}?v=20260226c"></script>
+    <script src="{% static 'js/shared.js' %}?v=20260226c"></script>
+    <!-- User Data for JS -->
+    {% if user.is_authenticated %}
+    <script type="application/json" id="user-data">
+        {"name": "{{ user.first_name|default:user.email|escapejs }}", "email": "{{ user.email|escapejs }}", "id": {{ user.id }}, "provider": "email"}
+    </script>
+    {% endif %}
+
     <script>
-        {% if user.is_authenticated %}
-        if (!localStorage.getItem('smartcampus-user')) {
-            localStorage.setItem('smartcampus-user', JSON.stringify({
-                name: "{{ user.first_name|default:user.email|escapejs }}",
-                email: "{{ user.email|escapejs }}",
-                id: {{ user.id }},
-        provider: "email"
-            }));
+        // Parse user data safely to avoid IDE lint errors
+        var userDataEl = document.getElementById('user-data');
+        if (userDataEl) {
+            if (!localStorage.getItem('smartcampus-user')) {
+                try {
+                    var data = JSON.parse(userDataEl.textContent);
+                    localStorage.setItem('smartcampus-user', JSON.stringify(data));
+                } catch(e) {}
+            }
+        } else {
+            localStorage.removeItem('smartcampus-user');
         }
-        {% else %}
-        localStorage.removeItem('smartcampus-user');
-        {% endif %}
     </script>
 
-    <!-- ===== INLINE RESULTS JS – NO CACHE ISSUES ===== -->
+    <!--=====INLINE RESULTS JS – LOCATION & RECOMMENDATIONS=====-->
     <script>
         (function () {
             'use strict';
@@ -140,19 +219,39 @@
             var errorText = document.getElementById('errorText');
             var retryBtn = document.getElementById('retryBtn');
             var categoryFilters = document.getElementById('categoryFilters');
+            var nearbyToolbar = document.getElementById('nearbyToolbar');
             var resultsInfo = document.getElementById('resultsInfo');
             var resultsCount = document.getElementById('resultsCount');
+            var manualLat = document.getElementById('manualLat');
+            var manualLon = document.getElementById('manualLon');
+            var useCoordsBtn = document.getElementById('useCoordsBtn');
+            var sortBy = document.getElementById('sortBy');
+            var statTotal = document.getElementById('statTotal');
+            var statTopScore = document.getElementById('statTopScore');
+            var statAvgDistance = document.getElementById('statAvgDistance');
+            var loadMoreWrap = document.getElementById('loadMoreWrap');
+            var loadMoreBtn = document.getElementById('loadMoreBtn');
 
             var allResults = [];
             var currentFilter = 'all';
+            var currentSort = 'score_desc';
+            var filteredResults = [];
+            var renderedCount = 0;
+            var PAGE_SIZE = 12;
             var userLat = null;
             var userLon = null;
+            var userAccuracy = null;
+            var watchId = null;     // geolocation watchPosition ID
+            var locationResolved = false;  // true once we get a usable position
+            var bestCandidate = null;
+            var TARGET_ACCURACY_M = 120;
+            var MAX_ACCEPTABLE_ACCURACY_M = 1200;
 
             function showEl(el) { if (el) el.style.display = ''; }
             function hideEl(el) { if (el) el.style.display = 'none'; }
 
             var CATEGORY_ICONS = {
-                restaurant: '🍽️', cafe: '☕', market: '🛒', shop: '🛍️',
+                food: '🍱', restaurant: '🍽️', cafe: '☕', market: '🛒', shop: '🛍️',
                 park: '🌳', game_zone: '🎮', leisure: '🏊', tourism: '🗺️',
                 event: '🎉', place: '📍', other: '📌'
             };
@@ -160,12 +259,13 @@
             var SOURCE_COLORS = {
                 OSM: { bg: 'rgba(16,185,129,0.15)', color: '#10b981', border: 'rgba(16,185,129,0.3)' },
                 Foursquare: { bg: 'rgba(99,102,241,0.15)', color: '#818cf8', border: 'rgba(99,102,241,0.3)' },
-                Eventbrite: { bg: 'rgba(249,115,22,0.15)', color: '#fb923c', border: 'rgba(249,115,22,0.3)' }
+                Eventbrite: { bg: 'rgba(249,115,22,0.15)', color: '#fb923c', border: 'rgba(249,115,22,0.3)' },
+                SmartCampus: { bg: 'rgba(14,165,233,0.15)', color: '#38bdf8', border: 'rgba(14,165,233,0.35)' }
             };
 
             /* ── Category matching ────────────────────── */
-            /* Each filter pill maps to multiple possible API category values */
             var CATEGORY_MAP = {
+                food: ['food'],
                 restaurant: ['restaurant'],
                 cafe: ['cafe'],
                 market: ['market', 'shop'],
@@ -186,38 +286,96 @@
                 return false;
             }
 
-            /* ── Geolocation ──────────────────────────── */
+            /* ────────────────────────────────────────────
+               Geolocation – Desktop-friendly Approach
+               1. Try low-accuracy first (WiFi/IP – fast, works on desktops)
+               2. Accept any position that comes back
+               3. If that fails, try high-accuracy GPS as fallback
+               ──────────────────────────────────────────── */
             function requestLocation() {
                 if (!navigator.geolocation) {
-                    showError('Geolocation is not supported by your browser.');
+                    showError('Geolocation is not supported by this browser.');
                     return;
                 }
+
+                locationResolved = false;
+                bestCandidate = null;
                 locationLabel.textContent = 'Detecting location…';
                 detectBtn.disabled = true;
                 detectBtn.querySelector('span').textContent = 'Detecting…';
 
+                // Stop any existing watch
+                if (watchId !== null) {
+                    navigator.geolocation.clearWatch(watchId);
+                    watchId = null;
+                }
+
+                // Strategy 1: Low-accuracy first (WiFi/IP – works on desktops)
                 navigator.geolocation.getCurrentPosition(
                     function (pos) {
-                        userLat = pos.coords.latitude;
-                        userLon = pos.coords.longitude;
-                        locationLabel.textContent = 'Location detected ✓';
-                        locationCoords.textContent = userLat.toFixed(4) + ', ' + userLon.toFixed(4);
-                        detectBtn.disabled = false;
-                        detectBtn.querySelector('span').textContent = 'Refresh Location';
-                        fetchRecommendations();
+                        if (locationResolved) return;
+                        var acc = pos.coords.accuracy || null;
+                        onLocationFound(pos.coords.latitude, pos.coords.longitude, acc,
+                            acc && acc <= TARGET_ACCURACY_M ? 'GPS' : 'Network');
                     },
                     function (err) {
-                        detectBtn.disabled = false;
-                        detectBtn.querySelector('span').textContent = 'Detect My Location';
-                        var msgs = {
-                            1: 'Location access denied. Please allow location permission and try again.',
-                            2: 'Unable to determine your location. Check your network.',
-                            3: 'Location request timed out. Please try again.'
-                        };
-                        showError(msgs[err.code] || 'Could not get your location.');
+                        console.warn('[SmartCampus] Low-accuracy getCurrentPosition failed (code ' + err.code + '): ' + err.message);
+                        // Strategy 2: Try high-accuracy (GPS) as fallback
+                        tryHighAccuracy();
                     },
-                    { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+                    { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
                 );
+
+                // Safety net: if low-accuracy hasn't resolved in 12s, also try high-accuracy
+                setTimeout(function () {
+                    if (!locationResolved) {
+                        tryHighAccuracy();
+                    }
+                }, 12000);
+            }
+
+            function tryHighAccuracy() {
+                if (locationResolved) return;
+
+                navigator.geolocation.getCurrentPosition(
+                    function (pos) {
+                        if (locationResolved) return;
+                        onLocationFound(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy || null, 'GPS');
+                    },
+                    function (err) {
+                        console.warn('[SmartCampus] High-accuracy getCurrentPosition failed (code ' + err.code + '): ' + err.message);
+                        if (!locationResolved) {
+                            detectBtn.disabled = false;
+                            detectBtn.querySelector('span').textContent = 'Detect My Location';
+                            showError('Could not get current location. Please enter coordinates manually or click Try Again.');
+                        }
+                    },
+                    { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
+                );
+            }
+
+            /**
+             * Called when location is successfully determined (from any source).
+             */
+            function onLocationFound(lat, lon, accuracy, source) {
+                if (locationResolved) return;
+                locationResolved = true;
+
+                userLat = lat;
+                userLon = lon;
+                userAccuracy = accuracy;
+
+                var label = 'Precise location detected ✓';
+                if (source === 'Approx') label = 'Approximate location detected ✓';
+
+                locationLabel.textContent = label;
+                locationCoords.textContent = userLat.toFixed(5) + ', ' + userLon.toFixed(5) +
+                    (userAccuracy ? (' (±' + Math.round(userAccuracy) + 'm)') : '');
+                detectBtn.disabled = false;
+                detectBtn.querySelector('span').textContent = 'Refresh Location';
+
+                console.log('[SmartCampus] Location resolved via ' + source + ': ' + userLat.toFixed(4) + ', ' + userLon.toFixed(4));
+                fetchRecommendations();
             }
 
             /* ── Fetch recommendations ────────────────── */
@@ -225,13 +383,21 @@
                 hideEl(nearbyError);
                 hideEl(nearbyEmpty);
                 hideEl(categoryFilters);
+                hideEl(nearbyToolbar);
                 hideEl(resultsInfo);
+                hideEl(loadMoreWrap);
                 nearbyGrid.innerHTML = '';
                 showEl(nearbyLoading);
 
                 var xhr = new XMLHttpRequest();
                 xhr.open('POST', '/get-recommendations/', true);
+                xhr.timeout = 35000;  // 35s to accommodate Overpass mirror retries
                 xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.setRequestHeader('X-CSRFToken', getCsrfToken());
+                xhr.ontimeout = function () {
+                    hideEl(nearbyLoading);
+                    showError('Request timed out. Please try again.');
+                };
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState !== 4) return;
 
@@ -261,19 +427,38 @@
                     if (allPill) allPill.classList.add('active');
 
                     showEl(categoryFilters);
-                    renderCards();
+                    showEl(nearbyToolbar);
+                    renderCards(true);
                 };
 
                 xhr.send(JSON.stringify({
                     latitude: userLat,
                     longitude: userLon,
-                    preferences: ['restaurant', 'cafe', 'park', 'event', 'market', 'game_zone']
+                    accuracy_m: userAccuracy,
+                    preferences: ['food', 'restaurant', 'cafe', 'park', 'event', 'market', 'game_zone']
                 }));
             }
 
+            function getCsrfToken() {
+                var name = 'csrftoken=';
+                var decodedCookie = decodeURIComponent(document.cookie || '');
+                var parts = decodedCookie.split(';');
+                for (var i = 0; i < parts.length; i++) {
+                    var c = parts[i].trim();
+                    if (c.indexOf(name) === 0) {
+                        return c.substring(name.length, c.length);
+                    }
+                }
+                return '';
+            }
+
             /* ── Render cards ─────────────────────────── */
-            function renderCards() {
-                nearbyGrid.innerHTML = '';
+            function renderCards(reset) {
+                if (reset) {
+                    nearbyGrid.innerHTML = '';
+                    renderedCount = 0;
+                    hideEl(loadMoreWrap);
+                }
                 hideEl(nearbyEmpty);
 
                 var filtered = [];
@@ -283,18 +468,87 @@
                     }
                 }
 
+                filtered = sortResults(filtered);
+                filteredResults = filtered;
+
                 if (filtered.length === 0) {
                     showEl(nearbyEmpty);
                     hideEl(resultsInfo);
+                    hideEl(loadMoreWrap);
                     return;
                 }
 
                 showEl(resultsInfo);
-                resultsCount.textContent = 'Showing ' + filtered.length + ' recommendation' + (filtered.length > 1 ? 's' : '');
+                renderNextBatch();
+                updateStats(filtered);
+            }
 
-                for (var j = 0; j < filtered.length; j++) {
-                    nearbyGrid.appendChild(buildCard(filtered[j], j));
+            function renderNextBatch() {
+                var nextCount = Math.min(renderedCount + PAGE_SIZE, filteredResults.length);
+                for (var j = renderedCount; j < nextCount; j++) {
+                    nearbyGrid.appendChild(buildCard(filteredResults[j], j));
                 }
+                renderedCount = nextCount;
+                resultsCount.textContent = 'Showing ' + renderedCount + ' of ' + filteredResults.length + ' recommendations';
+                if (renderedCount < filteredResults.length) {
+                    loadMoreBtn.textContent = 'Show More (' + (filteredResults.length - renderedCount) + ' left)';
+                    showEl(loadMoreWrap);
+                } else {
+                    hideEl(loadMoreWrap);
+                }
+            }
+
+            function sortResults(items) {
+                var arr = items.slice();
+                if (currentSort === 'distance_asc') {
+                    arr.sort(function (a, b) { return (a.distance_km || 9999) - (b.distance_km || 9999); });
+                } else if (currentSort === 'rating_desc') {
+                    arr.sort(function (a, b) { return (b.rating || 0) - (a.rating || 0); });
+                } else if (currentSort === 'name_asc') {
+                    arr.sort(function (a, b) { return (a.name || '').localeCompare(b.name || ''); });
+                } else {
+                    arr.sort(function (a, b) { return (b.score || 0) - (a.score || 0); });
+                }
+                return arr;
+            }
+
+            function updateStats(items) {
+                var total = items.length;
+                var topScore = 0;
+                var distanceSum = 0;
+                var distanceCount = 0;
+
+                for (var i = 0; i < items.length; i++) {
+                    var s = parseFloat(items[i].score || 0);
+                    if (s > topScore) topScore = s;
+                    if (items[i].distance_km !== null && items[i].distance_km !== undefined) {
+                        distanceSum += parseFloat(items[i].distance_km) || 0;
+                        distanceCount += 1;
+                    }
+                }
+
+                var avgDistance = distanceCount ? (distanceSum / distanceCount) : 0;
+                animateNumber(statTotal, total, 0);
+                animateNumber(statTopScore, topScore, 1);
+                animateNumber(statAvgDistance, avgDistance, 1, ' km');
+            }
+
+            function animateNumber(el, target, decimals, suffix) {
+                var start = 0;
+                var duration = 420;
+                var startTime = null;
+                var fixed = typeof decimals === 'number' ? decimals : 0;
+                var endVal = Number(target) || 0;
+                var tail = suffix || '';
+
+                function tick(ts) {
+                    if (!startTime) startTime = ts;
+                    var progress = Math.min((ts - startTime) / duration, 1);
+                    var current = start + (endVal - start) * progress;
+                    el.textContent = current.toFixed(fixed) + tail;
+                    if (progress < 1) requestAnimationFrame(tick);
+                }
+                requestAnimationFrame(tick);
             }
 
             function buildCard(item, idx) {
@@ -308,6 +562,12 @@
                 var rating = (item.rating != null) ? parseFloat(item.rating).toFixed(1) + ' ★' : 'N/A';
                 var dist = (item.distance_km != null) ? item.distance_km + ' km' : '—';
                 var scr = (item.score != null) ? item.score.toFixed(1) + '/10' : '—';
+                var scorePct = item.score != null ? Math.max(0, Math.min(100, (parseFloat(item.score) / 10) * 100)) : 0;
+                var locationText = item.location || 'Location unavailable';
+                var hasCoords = item.latitude !== null && item.latitude !== undefined && item.longitude !== null && item.longitude !== undefined;
+                var mapLink = hasCoords
+                    ? 'https://www.google.com/maps?q=' + encodeURIComponent(item.latitude + ',' + item.longitude)
+                    : '';
 
                 var catLabel = (item.category || 'other').replace(/_/g, ' ');
                 catLabel = catLabel.charAt(0).toUpperCase() + catLabel.slice(1);
@@ -322,19 +582,38 @@
                 card.innerHTML =
                     '<div class="nearby-card-header">' +
                     '<span class="nearby-card-icon">' + icon + '</span>' +
+                    '<div class="nearby-card-badges">' +
+                    (idx === 0 ? '<span class="nearby-card-rank">Top Pick</span>' : '') +
                     '<span class="nearby-card-source" style="background:' + src.bg + ';color:' + src.color + ';border-color:' + src.border + '">' + (item.source || 'OSM') + '</span>' +
+                    '</div>' +
                     '</div>' +
                     '<h3 class="nearby-card-name">' + esc(item.name) + '</h3>' +
                     '<span class="nearby-card-category">' + catLabel + '</span>' +
+                    '<div class="nearby-card-location">' +
+                    '<span class="nearby-location-dot">📍</span>' +
+                    '<span class="nearby-location-text">' + esc(locationText) + '</span>' +
+                    (hasCoords ? '<a class="nearby-map-link" href="' + mapLink + '" target="_blank" rel="noopener">Map</a>' : '') +
+                    '</div>' +
                     '<div class="nearby-card-meta">' +
                     '<div class="nearby-meta-item"><span class="nearby-meta-label">Rating</span><span class="nearby-meta-value">' + rating + '</span></div>' +
                     '<div class="nearby-meta-item"><span class="nearby-meta-label">Distance</span><span class="nearby-meta-value">' + dist + '</span></div>' +
                     '<div class="nearby-meta-item"><span class="nearby-meta-label">Score</span><span class="nearby-meta-value ' + scoreClass + '">' + scr + '</span></div>' +
                     '</div>' +
+                    '<div class="nearby-score-track"><span class="nearby-score-fill" style="width:' + scorePct.toFixed(1) + '%"></span></div>' +
                     '<div class="nearby-card-why">' +
                     '<span class="nearby-why-label">Why Recommended</span>' +
                     '<p class="nearby-why-text">' + esc(item.why_recommended || '') + '</p>' +
-                    '</div>';
+                    '</div>' +
+                    '<button class="nearby-card-save" data-id="' + esc(String(item.id || idx)) + '" data-type="' + esc(item.category === 'event' ? 'event' : 'food') + '" data-name="' + esc(item.name) + '">' +
+                    '🔖 Save' +
+                    '</button>';
+
+                var saveBtn = card.querySelector('.nearby-card-save');
+                if (saveBtn) {
+                    saveBtn.addEventListener('click', function () {
+                        savePlace(this, this.getAttribute('data-id'), this.getAttribute('data-type'), this.getAttribute('data-name'));
+                    });
+                }
 
                 return card;
             }
@@ -346,7 +625,19 @@
                     for (var k = 0; k < filterBtns.length; k++) filterBtns[k].classList.remove('active');
                     this.classList.add('active');
                     currentFilter = this.getAttribute('data-cat');
-                    renderCards();
+                    renderCards(true);
+                });
+            }
+
+            if (sortBy) {
+                sortBy.addEventListener('change', function () {
+                    currentSort = this.value || 'score_desc';
+                    renderCards(true);
+                });
+            }
+            if (loadMoreBtn) {
+                loadMoreBtn.addEventListener('click', function () {
+                    renderNextBatch();
                 });
             }
 
@@ -354,6 +645,8 @@
             function showError(msg) {
                 hideEl(nearbyLoading);
                 hideEl(nearbyEmpty);
+                hideEl(nearbyToolbar);
+                hideEl(loadMoreWrap);
                 errorText.textContent = msg;
                 showEl(nearbyError);
             }
@@ -364,11 +657,72 @@
                 return d.innerHTML;
             }
 
+            /* ── Save place ───────────────────────────── */
+            window.savePlace = function (btn, itemId, itemType, itemName) {
+                if (btn.classList.contains('saving')) return;
+                btn.classList.add('saving');
+                btn.textContent = '⏳ Saving…';
+
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', '/api/save-place/', true);
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.setRequestHeader('X-CSRFToken', getCsrfToken());
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState !== 4) return;
+                    btn.classList.remove('saving');
+                    if (xhr.status === 200) {
+                        try {
+                            var resp = JSON.parse(xhr.responseText);
+                            if (resp.status === 'saved') {
+                                btn.classList.add('saved');
+                                btn.innerHTML = '✅ Saved';
+                                if (typeof Toast !== 'undefined') Toast.show(itemName + ' saved!', '🔖');
+                            } else {
+                                btn.classList.remove('saved');
+                                btn.innerHTML = '🔖 Save';
+                                if (typeof Toast !== 'undefined') Toast.show(itemName + ' removed', '🗑️');
+                            }
+                        } catch (e) {
+                            btn.innerHTML = '🔖 Save';
+                        }
+                    } else {
+                        btn.innerHTML = '🔖 Save';
+                        if (typeof Toast !== 'undefined') Toast.show('Failed to save. Try again.', '⚠️');
+                    }
+                };
+                xhr.send(JSON.stringify({ item_id: itemId, item_type: itemType, item_name: itemName }));
+            };
+
             /* ── Event bindings ───────────────────────── */
-            detectBtn.addEventListener('click', requestLocation);
+            detectBtn.addEventListener('click', function () {
+                locationResolved = false;  // allow re-detection
+                requestLocation();
+            });
+            if (useCoordsBtn) {
+                useCoordsBtn.addEventListener('click', function () {
+                    var lat = parseFloat((manualLat && manualLat.value) || '');
+                    var lon = parseFloat((manualLon && manualLon.value) || '');
+
+                    if (isNaN(lat) || isNaN(lon)) {
+                        showError('Please enter valid latitude and longitude.');
+                        return;
+                    }
+                    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+                        showError('Coordinates out of range. Latitude: -90 to 90, Longitude: -180 to 180.');
+                        return;
+                    }
+
+                    hideEl(nearbyError);
+                    locationResolved = false;
+                    onLocationFound(lat, lon, null, 'Manual');
+                });
+            }
             retryBtn.addEventListener('click', function () {
                 if (userLat && userLon) fetchRecommendations();
-                else requestLocation();
+                else {
+                    locationResolved = false;
+                    requestLocation();
+                }
             });
 
             /* ── Init ─────────────────────────────────── */

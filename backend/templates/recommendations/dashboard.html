@@ -6,6 +6,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dashboard – SmartCampus AI</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
     <meta name="description" content="Set your preferences to get personalized campus recommendations." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -97,6 +98,9 @@
                         <span class="form-label-text">Interests</span>
                         <div class="checkbox-group">
                             <label class="checkbox-label">
+                                <input type="checkbox" value="food" /> <span class="checkbox-custom"></span> Food
+                            </label>
+                            <label class="checkbox-label">
                                 <input type="checkbox" value="tech" checked /> <span class="checkbox-custom"></span>
                                 Tech Events
                             </label>
@@ -162,19 +166,26 @@
     <script src="{% static 'js/auth.js' %}?v=4"></script>
     <script src="{% static 'js/gooey-nav.js' %}"></script>
     <script src="{% static 'js/shared.js' %}?v=4"></script>
+    <!-- User Data for JS -->
+    {% if user.is_authenticated %}
+    <script type="application/json" id="user-data">
+        {"name": "{{ user.first_name|default:user.email|escapejs }}", "email": "{{ user.email|escapejs }}", "id": {{ user.id }}, "provider": "email"}
+    </script>
+    {% endif %}
+
     <script>
-        {% if user.is_authenticated %}
-        if (!localStorage.getItem('smartcampus-user')) {
-            localStorage.setItem('smartcampus-user', JSON.stringify({
-                name: "{{ user.first_name|default:user.email|escapejs }}",
-                email: "{{ user.email|escapejs }}",
-                id: {{ user.id }},
-        provider: "email"
-            }));
+        // Parse user data safely to avoid IDE lint errors
+        var userDataEl = document.getElementById('user-data');
+        if (userDataEl) {
+            if (!localStorage.getItem('smartcampus-user')) {
+                try {
+                    var data = JSON.parse(userDataEl.textContent);
+                    localStorage.setItem('smartcampus-user', JSON.stringify(data));
+                } catch(e) {}
+            }
+        } else {
+            localStorage.removeItem('smartcampus-user');
         }
-        {% else %}
-        localStorage.removeItem('smartcampus-user');
-        {% endif %}
     </script>
     <script src="{% static 'js/dashboard.js' %}?v=4"></script>
 </body>

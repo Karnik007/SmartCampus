@@ -1,147 +1,69 @@
+# SmartCampus AI
 
-# 🚀 SmartCampusAI
+SmartCampus AI is a Django-based campus recommendation platform with:
+- Email/social authentication
+- Personalized recommendation APIs (food/events + nearby places)
+- Razorpay-backed order/payment workflow
+- Server-rendered web UI with shared static assets
 
-An AI-powered real-time location-based recommendation system built with Django.
+## Tech Stack
+- Python, Django, Django REST Framework
+- JWT (`djangorestframework-simplejwt`)
+- django-allauth (Google/GitHub/Facebook)
+- MySQL (default) or SQLite fallback
+- Razorpay
 
-SmartCampusAI provides dynamic nearby recommendations including:
+## Project Structure
+- `backend/`: Django project (source of truth for web + APIs + static assets)
+- `frontend/`: static mirror for local experimentation (synced from `backend/static/js`)
 
-* 🍽 Restaurants & Cafes
-* 🛍 Markets & Shops
-* 🎮 Game Zones & Leisure Spots
-* 🌳 Parks
-* 🎉 Live Events
+## Local Setup
+1. Create and activate a virtual environment.
+2. Install dependencies:
+   - `pip install -r backend/requirements.txt`
+3. Create `backend/.env` (example keys):
+   - `DEBUG=True`
+   - `SECRET_KEY=<strong-random-secret>`
+   - `ALLOWED_HOSTS=localhost,127.0.0.1`
+   - `DB_ENGINE=django.db.backends.mysql` (or `django.db.backends.sqlite3`)
+   - `DB_NAME=smartcamp_db`
+   - `DB_USER=root`
+   - `DB_PASSWORD=...`
+   - `DB_HOST=127.0.0.1`
+   - `DB_PORT=3306`
+   - `CORS_ALLOWED_ORIGINS=http://localhost:8080`
+   - `RAZORPAY_KEY_ID=...`
+   - `RAZORPAY_KEY_SECRET=...`
+   - `FOURSQUARE_API_KEY=...`
+   - `EVENTBRITE_TOKEN=...`
+   - `GOOGLE_CLIENT_ID=...`
+   - `GOOGLE_CLIENT_SECRET=...`
+   - `GITHUB_CLIENT_ID=...`
+   - `GITHUB_CLIENT_SECRET=...`
+   - `FACEBOOK_APP_ID=...`
+   - `FACEBOOK_APP_SECRET=...`
 
-The system integrates multiple real-world APIs and applies intelligent ranking to deliver personalized recommendations.
+4. Run migrations:
+   - `cd backend`
+   - `python manage.py migrate`
+5. Seed demo data:
+   - `python manage.py seed_data`
+6. Start server:
+   - `python manage.py runserver`
 
----
+## API Notes
+- Base API path: `/api/`
+- JWT refresh endpoint: `/api/auth/refresh/`
+- Social API login now requires provider token(s), not client-asserted email:
+  - `POST /api/auth/social/`
+  - body: `{ "provider": "google|github|facebook", "access_token": "...", "id_token": "..." }`
 
-## 🌍 Live Location-Based Recommendations
+## Security/Hardening Implemented
+- Removed insecure hardcoded DB password default
+- Enforced non-static `SECRET_KEY` behavior
+- Added provider token verification for social login
+- Removed CSRF-exempt nearby API flow; now session-auth + CSRF + rate-limited
 
-The engine uses:
-
-* 🟢 OpenStreetMap (Overpass API) – Base venue data
-* 🟢 Foursquare Places API – Enriched place details
-* 🟢 Eventbrite API – Real-time nearby events
-
-User GPS coordinates are captured via browser geolocation and sent securely to the backend.
-
----
-
-## 🧠 Intelligent Scoring System
-
-Each recommendation is ranked using a custom AI scoring algorithm:
-
-```
-score =
-+3 if matches user preference
-+2 if rating > 4
-- (distance / 500)
-+1 if open now
-+2 if popular
-```
-
-Results are sorted by score and top recommendations are returned.
-
----
-
-## 🏗 Project Architecture
-
-```
-smartcampus/
-│
-├── services/
-│   └── recommendation_service.py
-│
-├── api_integrations/
-│   ├── overpass.py
-│   ├── foursquare.py
-│   └── eventbrite.py
-│
-├── utils/
-│   └── distance.py
-│
-├── templates/
-├── static/
-├── views.py
-└── urls.py
-```
-
----
-
-## ⚙️ Tech Stack
-
-* Python 3
-* Django
-* Vanilla JavaScript
-* OpenStreetMap API
-* Foursquare API
-* Eventbrite API
-* Django Cache Framework
-* python-dotenv
-* Haversine distance formula
-
----
-
-## 🔐 Environment Variables
-
-Create a `.env` file in project root:
-
-```
-FOURSQUARE_API_KEY=your_foursquare_key
-EVENTBRITE_TOKEN=your_eventbrite_token
-```
-
-Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
----
-
-## ▶️ Running the Project Locally
-
-```bash
-git clone https://github.com/your-username/SmartCampusAI.git
-cd SmartCampusAI
-
-python -m venv venv
-source venv/bin/activate   # Windows: venv\Scripts\activate
-
-pip install -r requirements.txt
-
-python manage.py migrate
-python manage.py runserver
-```
-
-Open:
-
-```
-http://127.0.0.1:8000/
-```
-
----
-
-## 📦 Key Features
-
-* Real-time GPS-based recommendations
-* Multi-API integration
-* Modular backend architecture
-* Distance calculation (Haversine)
-* Smart ranking algorithm
-* API key security via environment variables
-* 5-minute location-based caching
-* Dynamic frontend rendering
-
----
-
-## 🚧 Future Improvements
-
-* User preference learning
-* Recommendation personalization history
-* Async API calls (Celery / Redis)
-* Deployment to AWS / Azure
-* Real-time maps integration
-* User analytics dashboard
-
----
+## Validation
+- `python manage.py check`
+- `python manage.py test`

@@ -1,0 +1,286 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Saved Places – SmartCampus AI</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
+    <meta name="description" content="View and manage your saved places." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20260226c" />
+    <style>
+        .saved-places-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.25rem;
+            margin-top: 1.5rem;
+        }
+
+        .saved-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+            animation: fadeInUp 0.4s ease both;
+        }
+
+        .saved-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--border-color-hover);
+        }
+
+        .saved-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+
+        .saved-card-type {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .saved-card-type.food {
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+        }
+
+        .saved-card-type.event {
+            background: rgba(249, 115, 22, 0.15);
+            color: #fb923c;
+        }
+
+        .saved-card-name {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .saved-card-date {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .saved-card-remove {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border-radius: 8px;
+            padding: 0.4rem 0.85rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .saved-card-remove:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.4);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        .empty-state-icon {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state-text {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <section class="page-section" id="savedPlaces">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge">Collection</span>
+                <h2 class="section-title">Saved <span class="gradient-text">Places</span></h2>
+                <p class="section-subtitle">Your favourite spots, saved for easy access.</p>
+            </div>
+
+            <div id="savedPlacesContent">
+                <div class="empty-state" id="loadingState">
+                    <div class="nearby-spinner"></div>
+                    <p class="empty-state-text" style="margin-top:1rem;">Loading saved places…</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <p>Built with ❤️ for Hackathon 2026 · <strong>SmartCampus AI</strong> — Transparent Recommender System</p>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/api.js' %}?v=20260226c"></script>
+    <script src="{% static 'js/auth.js' %}?v=20260226c"></script>
+    <script src="{% static 'js/gooey-nav.js' %}?v=20260226c"></script>
+    <script src="{% static 'js/shared.js' %}?v=20260226c"></script>
+    <!-- User Data for JS -->
+    {% if user.is_authenticated %}
+    <script type="application/json" id="user-data">
+        {"name": "{{ user.first_name|default:user.email|escapejs }}", "email": "{{ user.email|escapejs }}", "id": {{ user.id }}, "provider": "email"}
+    </script>
+    {% endif %}
+
+    <script>
+        // Parse user data safely to avoid IDE lint errors
+        var userDataEl = document.getElementById('user-data');
+        if (userDataEl) {
+            if (!localStorage.getItem('smartcampus-user')) {
+                try {
+                    var data = JSON.parse(userDataEl.textContent);
+                    localStorage.setItem('smartcampus-user', JSON.stringify(data));
+                } catch(e) {}
+            }
+        } else {
+            localStorage.removeItem('smartcampus-user');
+        }
+    </script>
+    <script>
+        (function () {
+            'use strict';
+            initShared();
+
+            var container = document.getElementById('savedPlacesContent');
+
+            function getCsrfToken() {
+                var name = 'csrftoken=';
+                var parts = decodeURIComponent(document.cookie || '').split(';');
+                for (var i = 0; i < parts.length; i++) {
+                    var c = parts[i].trim();
+                    if (c.indexOf(name) === 0) return c.substring(name.length);
+                }
+                return '';
+            }
+
+            function loadSavedPlaces() {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', '/api/save-place/', true);
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.setRequestHeader('X-CSRFToken', getCsrfToken());
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState !== 4) return;
+                    if (xhr.status === 200) {
+                        try {
+                            var data = JSON.parse(xhr.responseText);
+                            renderPlaces(data.saved_places || data || []);
+                        } catch (e) {
+                            renderPlaces([]);
+                        }
+                    } else {
+                        renderPlaces([]);
+                    }
+                };
+                xhr.send();
+            }
+
+            function renderPlaces(places) {
+                if (!places || places.length === 0) {
+                    container.innerHTML =
+                        '<div class="empty-state">' +
+                        '<div class="empty-state-icon">📍</div>' +
+                        '<p class="empty-state-title">No saved places yet</p>' +
+                        '<p class="empty-state-text">Save places from the Results page to see them here.</p>' +
+                        '<a href="/results/" class="btn btn-primary" style="margin-top:1.25rem;display:inline-block;text-decoration:none;">Browse Recommendations</a>' +
+                        '</div>';
+                    return;
+                }
+
+                var html = '<div class="saved-places-grid">';
+                for (var i = 0; i < places.length; i++) {
+                    var p = places[i];
+                    var icon = p.item_type === 'food' ? '🍱' : '🎉';
+                    var dateStr = p.created_at ? new Date(p.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+                    html +=
+                        '<div class="saved-card" style="animation-delay:' + (i * 0.06) + 's">' +
+                        '<div class="saved-card-header">' +
+                        '<span class="saved-card-type ' + esc(p.item_type) + '">' + icon + ' ' + esc(p.item_type) + '</span>' +
+                        '<button class="saved-card-remove" data-id="' + esc(String(p.item_id)) + '" data-type="' + esc(p.item_type) + '" data-name="' + esc(p.item_name) + '">Remove</button>' +
+                        '</div>' +
+                        '<h3 class="saved-card-name">' + esc(p.item_name) + '</h3>' +
+                        '<span class="saved-card-date">Saved ' + dateStr + '</span>' +
+                        '</div>';
+                }
+                html += '</div>';
+                container.innerHTML = html;
+
+                // Bind remove buttons
+                var btns = container.querySelectorAll('.saved-card-remove');
+                for (var j = 0; j < btns.length; j++) {
+                    btns[j].addEventListener('click', function () {
+                        removeSavedPlace(this.dataset.id, this.dataset.type, this.dataset.name);
+                    });
+                }
+            }
+
+            function removeSavedPlace(itemId, itemType, itemName) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', '/api/save-place/', true);
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.setRequestHeader('X-CSRFToken', getCsrfToken());
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState !== 4) return;
+                    if (xhr.status === 200) {
+                        if (typeof Toast !== 'undefined') Toast.show(itemName + ' removed', '🗑️');
+                        loadSavedPlaces();
+                    }
+                };
+                xhr.send(JSON.stringify({ item_id: itemId, item_type: itemType, item_name: itemName }));
+            }
+
+            function esc(s) {
+                var d = document.createElement('div');
+                d.textContent = s || '';
+                return d.innerHTML;
+            }
+
+            loadSavedPlaces();
+        })();
+    </script>
+
+</body>
+
+</html>

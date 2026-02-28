@@ -11,6 +11,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import CustomUser, UserProfile
+from .social_verifier import verify_social_token
 from .serializers import (
     SignupSerializer, LoginSerializer, SocialLoginSerializer,
     UserSerializer, UserProfileSerializer,
@@ -69,14 +70,19 @@ class SocialLoginView(APIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        # Find or create user
+        social_user = verify_social_token(
+            provider=data['provider'],
+            access_token=data.get('access_token'),
+            id_token=data.get('id_token'),
+        )
+
         user, created = CustomUser.objects.get_or_create(
-            email=data['email'],
+            email=social_user['email'],
             defaults={
-                'full_name': data.get('name', ''),
+                'full_name': social_user.get('name', ''),
                 'provider': data['provider'],
-                'provider_id': data.get('provider_id', ''),
-                'avatar_url': data.get('avatar_url', ''),
+                'provider_id': social_user.get('provider_id', ''),
+                'avatar_url': social_user.get('avatar_url', ''),
                 'is_verified': True,  # Social accounts are pre-verified
             }
         )
@@ -85,11 +91,18 @@ class SocialLoginView(APIView):
             UserProfile.objects.create(user=user)
             logger.info(f"New social user created: {user.email} via {data['provider']}")
         else:
-            # Update provider info if existing user
-            if not user.provider_id and data.get('provider_id'):
+            update_fields = []
+            if user.provider != data['provider']:
                 user.provider = data['provider']
-                user.provider_id = data['provider_id']
-                user.save(update_fields=['provider', 'provider_id'])
+                update_fields.append('provider')
+            if social_user.get('provider_id') and user.provider_id != social_user.get('provider_id'):
+                user.provider_id = social_user['provider_id']
+                update_fields.append('provider_id')
+            if social_user.get('avatar_url') and user.avatar_url != social_user.get('avatar_url'):
+                user.avatar_url = social_user['avatar_url']
+                update_fields.append('avatar_url')
+            if update_fields:
+                user.save(update_fields=update_fields)
 
         tokens = _get_tokens(user)
         return Response({
@@ -196,52 +209,3 @@ def logout_view(request):
     django_logout(request)
     messages.info(request, 'You have been logged out.')
     return redirect('home')
-
-
-from django.http import JsonResponse
-from django.views.decorators.http import require_POST
-from django.views.decorators.csrf import csrf_exempt
-
-@csrf_exempt
-@require_POST
-def social_login_web_view(request):
-    """POST /social-login/ – Social login that creates a Django session."""
-    import json
-    try:
-        data = json.loads(request.body)
-    except json.JSONDecodeError:
-        return JsonResponse({'success': False, 'error': 'Invalid request.'}, status=400)
-
-    provider = data.get('provider', '')
-    email = data.get('email', '')
-    name = data.get('name', '')
-
-    if not provider or not email:
-        return JsonResponse({'success': False, 'error': 'Provider and email are required.'}, status=400)
-
-    # Find or create user
-    user, created = CustomUser.objects.get_or_create(
-        email=email,
-        defaults={
-            'full_name': name,
-            'provider': provider,
-            'is_verified': True,
-        }
-    )
-
-    if created:
-        UserProfile.objects.create(user=user)
-        logger.info(f"New social user created (web): {user.email} via {provider}")
-
-    # Create Django session
-    django_login(request, user, backend='accounts.backends.EmailBackend')
-    logger.info(f"Social login (web): {user.email} via {provider}")
-
-    return JsonResponse({
-        'success': True,
-        'user': {
-            'name': user.first_name_display,
-            'email': user.email,
-            'id': user.id,
-        }
-    })
