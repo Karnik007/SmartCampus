@@ -3,7 +3,6 @@
 SmartCampus AI is a Django-based campus recommendation platform with:
 - Email/social authentication
 - Personalized recommendation APIs (food/events + nearby places)
-- Razorpay-backed order/payment workflow
 - Server-rendered web UI with shared static assets
 
 ## Tech Stack
